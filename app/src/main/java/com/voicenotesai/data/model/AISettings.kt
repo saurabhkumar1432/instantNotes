@@ -11,18 +11,17 @@ data class AISettings(
     val promptTemplate: String = DEFAULT_PROMPT_TEMPLATE
 ) {
     companion object {
-        const val DEFAULT_PROMPT_TEMPLATE = """You are an AI assistant that converts voice transcriptions into well-formatted notes.
+        const val DEFAULT_PROMPT_TEMPLATE = """Convert the following voice transcription into well-formatted notes. Follow these rules:
 
-Please analyze the following transcribed text and create structured notes with these requirements:
-1. Extract key points and organize them clearly
-2. Fix any grammatical errors
-3. Format with appropriate headings and bullet points
-4. Preserve the original meaning and important details
-5. Make it easy to scan and understand
+1. Extract and organize key points clearly
+2. Fix any grammatical errors from speech-to-text
+3. Use headings, bullet points, and numbered lists where appropriate
+4. Preserve all important details and meaning
+5. Make it scannable and easy to read
 
-Transcribed text:
-{transcription}
+IMPORTANT: Respond ONLY with the formatted notes. Do NOT include any introductory text like "Here are your notes" or "Based on your transcription". Just provide the notes directly.
 
-Please provide the formatted notes:"""
+Transcription:
+{transcription}"""
     }
 }

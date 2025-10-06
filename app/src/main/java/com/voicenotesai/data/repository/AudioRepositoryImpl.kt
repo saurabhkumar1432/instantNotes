@@ -32,6 +32,7 @@ class AudioRepositoryImpl @Inject constructor(
     private var hasReceivedSpeech = false
     @Volatile
     private var stopRequested = false
+    private val accumulatedText = StringBuilder() // Accumulate partial results
 
     override fun hasPermission(): Boolean {
         return ContextCompat.checkSelfPermission(
@@ -59,6 +60,7 @@ class AudioRepositoryImpl @Inject constructor(
         cleanup()
         stopRequested = false
         hasReceivedSpeech = false
+        accumulatedText.clear()
         
         speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context)
         
@@ -144,7 +146,9 @@ class AudioRepositoryImpl @Inject constructor(
             }
 
             override fun onPartialResults(partialResults: Bundle?) {
-                // Partial recognition results
+                // Keep recording alive by handling partial results
+                // This helps prevent early termination on pauses
+                hasReceivedSpeech = true
             }
 
             override fun onEvent(eventType: Int, params: Bundle?) {
@@ -157,12 +161,13 @@ class AudioRepositoryImpl @Inject constructor(
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
             putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
-            putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false) // Disabled to prevent glitching
+            putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true) // Enable to keep recognition alive
             putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
-            // Increase timeout to allow longer pauses without stopping
-            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 3000L)
-            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 3000L)
-            // Prefer local recognition to reduce network overhead
+            // Realistic timeouts that Android actually respects (5 seconds is practical limit)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 5000L)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 5000L)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 0L)
+            // Prefer online for better recognition quality
             putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, false)
         }
 
@@ -197,8 +202,8 @@ class AudioRepositoryImpl @Inject constructor(
                     // Send duration update
                     trySend(RecordingState.Recording(duration))
                     
-                    // Wait 500ms before next update (smooth but not excessive)
-                    kotlinx.coroutines.delay(500)
+                    // Wait 200ms before next update for smoother, more visible timer
+                    kotlinx.coroutines.delay(200)
                 } catch (e: Exception) {
                     // Flow might be closed, exit gracefully
                     break
@@ -254,6 +259,7 @@ class AudioRepositoryImpl @Inject constructor(
             isCurrentlyRecording = false
             hasReceivedSpeech = false
             recordingStartTime = 0
+            accumulatedText.clear()
         }
     }
 

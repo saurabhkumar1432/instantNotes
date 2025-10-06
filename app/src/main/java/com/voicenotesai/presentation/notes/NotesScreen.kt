@@ -121,7 +121,7 @@ private fun NotesList(
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(Spacing.medium),
-        verticalArrangement = Arrangement.spacedBy(Spacing.medium)
+        verticalArrangement = Arrangement.spacedBy(Spacing.small)
     ) {
         items(notes, key = { it.id }) { note ->
             NoteItem(
@@ -147,7 +147,13 @@ private fun NoteItem(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 4.dp,
+            pressedElevation = 2.dp
+        ),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
     ) {
         Row(
             modifier = Modifier
@@ -157,29 +163,47 @@ private fun NoteItem(
             verticalAlignment = Alignment.Top
         ) {
             Column(
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(end = Spacing.small)
             ) {
-                Text(
-                    text = formatTimestamp(note.timestamp),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(Spacing.small))
+                // Timestamp with icon-style design
+                Surface(
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    shape = MaterialTheme.shapes.small,
+                    modifier = Modifier.padding(bottom = Spacing.small)
+                ) {
+                    Text(
+                        text = formatTimestamp(note.timestamp),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                }
+                
+                // Content preview with better typography
                 Text(
                     text = note.content,
-                    style = MaterialTheme.typography.bodyMedium,
-                    maxLines = 3,
-                    overflow = TextOverflow.Ellipsis
+                    style = MaterialTheme.typography.bodyLarge,
+                    maxLines = 4,
+                    overflow = TextOverflow.Ellipsis,
+                    lineHeight = MaterialTheme.typography.bodyLarge.fontSize * 1.5
                 )
             }
-            IconButton(
+            
+            // Delete button with better styling
+            FilledTonalIconButton(
                 onClick = onDeleteClick,
-                modifier = Modifier.size(40.dp)
+                modifier = Modifier.size(40.dp),
+                colors = IconButtonDefaults.filledTonalIconButtonColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                    contentColor = MaterialTheme.colorScheme.onErrorContainer
+                )
             ) {
                 Icon(
                     imageVector = Icons.Default.Delete,
                     contentDescription = "Delete note",
-                    tint = MaterialTheme.colorScheme.error
+                    modifier = Modifier.size(20.dp)
                 )
             }
         }
