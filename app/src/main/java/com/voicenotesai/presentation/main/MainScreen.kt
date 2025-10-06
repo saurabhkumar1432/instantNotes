@@ -24,6 +24,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -46,6 +47,7 @@ import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
@@ -336,16 +338,17 @@ private fun IdleContent(
 			verticalArrangement = Arrangement.spacedBy(Spacing.medium)
 		) {
 			Text(
-				text = "Capture the spark",
-				style = MaterialTheme.typography.headlineMedium,
-				fontWeight = FontWeight.Bold,
+				text = "✨ Drop that thought ✨",
+				style = MaterialTheme.typography.headlineLarge,
+				fontWeight = FontWeight.ExtraBold,
 				textAlign = TextAlign.Center
 			)
 			Text(
-				text = "Press record, riff your idea, and let the AI craft perfectly formatted notes.",
+				text = "Hit record, spill your mind, watch AI work its magic 🎯",
 				style = MaterialTheme.typography.bodyLarge,
 				textAlign = TextAlign.Center,
-				color = MaterialTheme.colorScheme.onSurfaceVariant
+				color = MaterialTheme.colorScheme.onSurfaceVariant,
+				fontWeight = FontWeight.Medium
 			)
 		}
 
@@ -354,24 +357,47 @@ private fun IdleContent(
 		Box(
 			modifier = Modifier
 				.fillMaxWidth()
-				.glassLayer(RoundedCornerShape(32.dp))
-				.padding(horizontal = Spacing.large, vertical = Spacing.medium)
+				.border(
+					width = 3.dp,
+					brush = Brush.linearGradient(
+						colors = listOf(
+							MaterialTheme.colorScheme.primary,
+							MaterialTheme.colorScheme.secondary,
+							MaterialTheme.colorScheme.tertiary
+						)
+					),
+					shape = RoundedCornerShape(24.dp)
+				)
+				.background(
+					color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
+					shape = RoundedCornerShape(24.dp)
+				)
+				.padding(horizontal = Spacing.large, vertical = Spacing.large)
 		) {
 			Column(
-				verticalArrangement = Arrangement.spacedBy(Spacing.small),
+				verticalArrangement = Arrangement.spacedBy(Spacing.medium),
 				horizontalAlignment = Alignment.Start
 			) {
 				Text(
-					text = "- Instant structuring with bullet + summary",
-					style = MaterialTheme.typography.bodyMedium
+					text = "🚀 What you get:",
+					style = MaterialTheme.typography.titleMedium,
+					fontWeight = FontWeight.Bold,
+					color = MaterialTheme.colorScheme.primary
 				)
 				Text(
-					text = "- Choose your AI brain in Settings",
-					style = MaterialTheme.typography.bodyMedium
+					text = "✓ Instant AI structuring (bullets + summary)",
+					style = MaterialTheme.typography.bodyLarge,
+					fontWeight = FontWeight.Medium
 				)
 				Text(
-					text = "- Audio stays on-device",
-					style = MaterialTheme.typography.bodyMedium
+					text = "✓ Your choice of AI brain (OpenAI, Claude, Gemini)",
+					style = MaterialTheme.typography.bodyLarge,
+					fontWeight = FontWeight.Medium
+				)
+				Text(
+					text = "✓ Audio never leaves your device 🔒",
+					style = MaterialTheme.typography.bodyLarge,
+					fontWeight = FontWeight.Medium
 				)
 			}
 		}
@@ -383,9 +409,10 @@ private fun IdleContent(
 		Spacer(modifier = Modifier.height(Spacing.large))
 
 		Text(
-			text = "Hands-free brain dump mode on.",
-			style = MaterialTheme.typography.bodyMedium,
-			color = MaterialTheme.colorScheme.onSurfaceVariant
+			text = "No typing. No fuss. Just vibes → notes 💭",
+			style = MaterialTheme.typography.bodyLarge,
+			color = MaterialTheme.colorScheme.onSurfaceVariant,
+			fontWeight = FontWeight.Medium
 		)
 
 		Spacer(modifier = Modifier.height(Spacing.extraLarge))
@@ -527,17 +554,18 @@ private fun RecordingContent(
 		Spacer(modifier = Modifier.height(Spacing.large))
 
 		Text(
-			text = "Listening...",
-			style = MaterialTheme.typography.headlineMedium,
-			fontWeight = FontWeight.SemiBold
+			text = "🎤 Listening...",
+			style = MaterialTheme.typography.headlineLarge,
+			fontWeight = FontWeight.ExtraBold
 		)
 
 		Spacer(modifier = Modifier.height(Spacing.small))
 
 		Text(
 			text = formatDuration(duration),
-			style = MaterialTheme.typography.displaySmall,
-			color = MaterialTheme.colorScheme.primary
+			style = MaterialTheme.typography.displayMedium,
+			color = MaterialTheme.colorScheme.primary,
+			fontWeight = FontWeight.Bold
 		)
 
 		Spacer(modifier = Modifier.height(Spacing.large))
@@ -545,9 +573,22 @@ private fun RecordingContent(
 		Box(
 			modifier = Modifier
 				.fillMaxWidth()
-				.height(140.dp)
-				.glassLayer(RoundedCornerShape(36.dp))
-				.padding(horizontal = Spacing.medium, vertical = Spacing.large)
+				.height(160.dp)
+				.border(
+					width = 3.dp,
+					brush = Brush.horizontalGradient(
+						colors = listOf(
+							MaterialTheme.colorScheme.primary,
+							MaterialTheme.colorScheme.secondary
+						)
+					),
+					shape = RoundedCornerShape(28.dp)
+				)
+				.background(
+					color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
+					shape = RoundedCornerShape(28.dp)
+				)
+				.padding(horizontal = Spacing.large, vertical = Spacing.large)
 		) {
 			WaveformIndicator(
 				modifier = Modifier
@@ -563,9 +604,11 @@ private fun RecordingContent(
 		Spacer(modifier = Modifier.height(Spacing.large))
 
 		Text(
-			text = "Tap to stop when you're done riffing.",
-			style = MaterialTheme.typography.bodyMedium,
-			color = MaterialTheme.colorScheme.onSurfaceVariant
+			text = "Done? Tap to stop and let the magic happen ✨",
+			style = MaterialTheme.typography.bodyLarge,
+			color = MaterialTheme.colorScheme.onSurfaceVariant,
+			fontWeight = FontWeight.Medium,
+			textAlign = TextAlign.Center
 		)
 
 		Spacer(modifier = Modifier.height(Spacing.extraLarge))
@@ -622,9 +665,9 @@ private fun SuccessContent(
 		Spacer(modifier = Modifier.height(Spacing.small))
 
 		Text(
-			text = "AI-crafted notes",
-			style = MaterialTheme.typography.headlineMedium,
-			fontWeight = FontWeight.SemiBold
+			text = "🔥 Your AI-powered notes",
+			style = MaterialTheme.typography.headlineLarge,
+			fontWeight = FontWeight.ExtraBold
 		)
 
 		val noteScrollState = rememberScrollState()
@@ -633,7 +676,20 @@ private fun SuccessContent(
 			modifier = Modifier
 				.fillMaxWidth()
 				.heightIn(min = 200.dp, max = 420.dp)
-				.glassLayer(RoundedCornerShape(32.dp))
+				.border(
+					width = 3.dp,
+					brush = Brush.linearGradient(
+						colors = listOf(
+							MaterialTheme.colorScheme.secondary,
+							MaterialTheme.colorScheme.primary
+						)
+					),
+					shape = RoundedCornerShape(24.dp)
+				)
+				.background(
+					color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+					shape = RoundedCornerShape(24.dp)
+				)
 		) {
 			Text(
 				text = notes,
@@ -642,29 +698,38 @@ private fun SuccessContent(
 				modifier = Modifier
 					.fillMaxWidth()
 					.verticalScroll(noteScrollState)
-					.padding(Spacing.large)
+					.padding(Spacing.large),
+				fontWeight = FontWeight.Medium
 			)
 		}
 
-		OutlinedButton(
+		Button(
 			onClick = onCopy,
-			modifier = Modifier.fillMaxWidth()
+			modifier = Modifier.fillMaxWidth(),
+			colors = ButtonDefaults.buttonColors(
+				containerColor = MaterialTheme.colorScheme.secondaryContainer,
+				contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+			)
 		) {
-			Text("Copy")
+			Text("📋 Copy to clipboard", fontWeight = FontWeight.Bold)
 		}
 
-		OutlinedButton(
+		Button(
 			onClick = onShare,
-			modifier = Modifier.fillMaxWidth()
+			modifier = Modifier.fillMaxWidth(),
+			colors = ButtonDefaults.buttonColors(
+				containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+				contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+			)
 		) {
-			Text("Share")
+			Text("📤 Share with friends", fontWeight = FontWeight.Bold)
 		}
 
 		Button(
 			onClick = onNewRecording,
 			modifier = Modifier.fillMaxWidth()
 		) {
-			Text("Start another recording")
+			Text("🎙️ Record another banger", fontWeight = FontWeight.Bold)
 		}
 
 		Spacer(modifier = Modifier.height(Spacing.small))

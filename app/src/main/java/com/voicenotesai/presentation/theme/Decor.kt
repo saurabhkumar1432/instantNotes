@@ -16,29 +16,53 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.dp
 
 /**
- * Applies a frosted glass surface treatment that pairs well with neon gradients.
+ * Gen-Z glassmorphism 2.0 - bolder borders, enhanced blur vibes
  */
-fun Modifier.glassLayer(shape: Shape = RoundedCornerShape(28.dp)): Modifier = composed {
+fun Modifier.glassLayer(shape: Shape = RoundedCornerShape(24.dp)): Modifier = composed {
     clip(shape)
-        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.72f))
+        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.85f))
         .border(
-            width = 1.dp,
-            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+            width = 2.dp,
+            brush = Brush.linearGradient(
+                colors = listOf(
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.4f),
+                    MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f)
+                )
+            ),
             shape = shape
         )
 }
 
 /**
- * Provides a vibrant gradient backdrop plus a subtle overlay to keep content legible.
+ * Neo-brutalism shadow effect for cards and buttons
+ */
+fun Modifier.brutalistShadow(
+    offsetX: Int = 6,
+    offsetY: Int = 6,
+    shape: Shape = RoundedCornerShape(24.dp)
+): Modifier = composed {
+    val shadowColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+    border(
+        width = 3.dp,
+        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+        shape = shape
+    )
+}
+
+/**
+ * Vibrant gradient backdrop with Gen-Z energy
  */
 @Composable
 fun NeonBackdrop(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
     val gradient = Brush.verticalGradient(
-        listOf(
-            MaterialTheme.colorScheme.primary.copy(alpha = 0.35f),
+        colors = listOf(
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
             MaterialTheme.colorScheme.background,
-            MaterialTheme.colorScheme.secondary.copy(alpha = 0.25f)
-        )
+            MaterialTheme.colorScheme.secondary.copy(alpha = 0.08f),
+            MaterialTheme.colorScheme.tertiary.copy(alpha = 0.06f)
+        ),
+        startY = 0f,
+        endY = 2000f
     )
 
     Box(
@@ -46,11 +70,21 @@ fun NeonBackdrop(modifier: Modifier = Modifier, content: @Composable () -> Unit)
             .fillMaxSize()
             .background(gradient)
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background.copy(alpha = 0.45f))
-        )
         content()
     }
+}
+
+/**
+ * Colorful gradient overlay for emphasis
+ */
+fun Modifier.rainbowGradient(): Modifier = composed {
+    background(
+        brush = Brush.linearGradient(
+            colors = listOf(
+                MaterialTheme.colorScheme.primary,
+                MaterialTheme.colorScheme.secondary,
+                MaterialTheme.colorScheme.tertiary
+            )
+        )
+    )
 }
