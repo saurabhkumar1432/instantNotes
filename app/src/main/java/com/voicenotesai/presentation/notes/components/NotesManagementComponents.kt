@@ -27,11 +27,11 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -99,7 +99,7 @@ fun NotesSearchBar(
         placeholder = { Text(placeholder) },
         leadingIcon = {
             Icon(
-                imageVector = Icons.Default.Info, // Using Info as search icon placeholder
+                imageVector = Icons.Default.Search,
                 contentDescription = "Search icon"
             )
         },
@@ -325,7 +325,7 @@ fun NotesSelectionToolbar(
                         }
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Refresh, // Using Refresh as export icon placeholder
+                            imageVector = Icons.Default.Refresh,
                             contentDescription = null
                         )
                     }

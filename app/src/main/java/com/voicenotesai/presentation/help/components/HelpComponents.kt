@@ -102,7 +102,11 @@ fun ContextualTooltip(
         exit = fadeOut(animationSpec = tween(200)) + scaleOut(animationSpec = tween(200))
     ) {
         tooltipData?.let { data ->
-            Box(modifier = modifier.fillMaxSize()) {
+            Box(
+                modifier = modifier
+                    .fillMaxSize()
+                    .zIndex(1000f)
+            ) {
                 // Semi-transparent overlay
                 Canvas(
                     modifier = Modifier
@@ -338,7 +342,11 @@ fun GuidedTour(
         val currentStep = currentTour.getCurrentStep()
         
         currentStep?.let { step ->
-            Box(modifier = modifier.fillMaxSize()) {
+            Box(
+                modifier = modifier
+                    .fillMaxSize()
+                    .zIndex(1000f)
+            ) {
                 // Dark overlay
                 Canvas(
                     modifier = Modifier.fillMaxSize()
@@ -548,7 +556,8 @@ fun QuickTip(
     ) {
         Card(
             modifier = modifier
-                .padding(Spacing.medium)
+                .padding(horizontal = Spacing.medium, vertical = Spacing.small)
+                .zIndex(10f)
                 .semantics {
                     contentDescription = "Quick tip: $title"
                 },
@@ -556,7 +565,7 @@ fun QuickTip(
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.primaryContainer
             ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
         ) {
             Row(
                 modifier = Modifier.padding(Spacing.medium),

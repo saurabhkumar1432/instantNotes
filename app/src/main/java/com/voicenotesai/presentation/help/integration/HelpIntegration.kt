@@ -3,6 +3,7 @@ package com.voicenotesai.presentation.help.integration
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -19,6 +20,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import com.voicenotesai.presentation.help.HelpManager
+import com.voicenotesai.presentation.help.HelpPreferences
 import com.voicenotesai.presentation.help.HelpState
 import com.voicenotesai.presentation.help.HelpTour
 import com.voicenotesai.presentation.help.HelpTours
@@ -28,6 +30,7 @@ import com.voicenotesai.presentation.help.components.GuidedTour
 import com.voicenotesai.presentation.help.components.HelpFloatingButton
 import com.voicenotesai.presentation.help.components.QuickTip
 import com.voicenotesai.presentation.help.rememberHelpState
+import com.voicenotesai.presentation.theme.Spacing
 import kotlinx.coroutines.delay
 
 /**
@@ -45,17 +48,23 @@ fun HelpEnabledScreen(
 ) {
     val helpState = rememberHelpState()
     var currentTour by remember { mutableStateOf<HelpTour?>(null) }
-    var showQuickTips by remember { mutableStateOf(true) }
     val context = LocalContext.current
+    val helpPrefs = remember { HelpPreferences.getInstance(context) }
+    
+    // Check if quick tip has been dismissed before using persistent storage
+    var quickTipsDismissed by remember(helpKey) { 
+        mutableStateOf(helpPrefs.isQuickTipDismissed(helpKey)) 
+    }
     
     // Auto-start tour if specified
     LaunchedEffect(autoStartTour, helpKey) {
         if (autoStartTour && enabledTours.isNotEmpty()) {
-            // Check if user has seen this tour before (in a real app, you'd use SharedPreferences)
-            val hasSeenTour = false // TODO: Check user preferences
+            val tour = enabledTours.first()
+            // Check if user has seen this tour before
+            val hasSeenTour = helpPrefs.isTourCompleted(tour.id) || helpPrefs.isTourSkipped(tour.id)
             if (!hasSeenTour) {
                 delay(500) // Small delay to let the screen settle
-                currentTour = enabledTours.first()
+                currentTour = tour
             }
         }
     }
@@ -74,64 +83,73 @@ fun HelpEnabledScreen(
                 // Tour step completed - could trigger analytics or state updates
             },
             onTourComplete = {
+                currentTour?.let { helpPrefs.completeTour(it.id) }
                 currentTour = null
-                // TODO: Mark tour as completed in user preferences
             },
             onTourSkip = {
+                currentTour?.let { helpPrefs.skipTour(it.id) }
                 currentTour = null
-                // TODO: Mark tour as skipped in user preferences
             }
         )
         
-        // Help button
-        if (showHelpButton && currentTour == null) {
+        // Help button - only show if there are tours available and no tour is active
+        if (showHelpButton && currentTour == null && enabledTours.isNotEmpty()) {
             HelpFloatingButton(
                 onClick = {
-                    if (enabledTours.isNotEmpty()) {
-                        currentTour = enabledTours.first()
-                    } else {
-                        // Show general help information
-                        helpState.showTooltip(
-                            title = "Help & Tips",
-                            description = "This app transforms your voice into polished, AI-enhanced notes. Speak naturally and let the AI do the rest!",
-                            position = TooltipPosition.Center
-                        )
-                    }
+                    currentTour = enabledTours.first()
                 },
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
+                    .padding(Spacing.large)
                     .helpTarget("help_button")
             )
         }
         
-        // Quick tips based on screen
-        when (helpKey) {
-            "main_screen" -> {
-                QuickTip(
-                    title = "Pro Tip",
-                    description = "Speak clearly and naturally. The AI works best with conversational speech.",
-                    isVisible = showQuickTips,
-                    onDismiss = { showQuickTips = false },
-                    modifier = Modifier.align(Alignment.TopCenter)
-                )
-            }
-            "notes_screen" -> {
-                QuickTip(
-                    title = "Search Everything",
-                    description = "Use the search bar to find notes by content or transcribed text.",
-                    isVisible = showQuickTips,
-                    onDismiss = { showQuickTips = false },
-                    modifier = Modifier.align(Alignment.TopCenter)
-                )
-            }
-            "settings_screen" -> {
-                QuickTip(
-                    title = "Validate Settings",
-                    description = "Always test your API settings before recording to ensure everything works properly.",
-                    isVisible = showQuickTips,
-                    onDismiss = { showQuickTips = false },
-                    modifier = Modifier.align(Alignment.TopCenter)
-                )
+        // Quick tips based on screen - only show if not dismissed and no tour is active
+        if (!quickTipsDismissed && currentTour == null) {
+            when (helpKey) {
+                "main_screen" -> {
+                    QuickTip(
+                        title = "Pro Tip",
+                        description = "Speak clearly and naturally. The AI works best with conversational speech.",
+                        isVisible = true,
+                        onDismiss = { 
+                            quickTipsDismissed = true
+                            helpPrefs.dismissQuickTip(helpKey)
+                        },
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .padding(top = Spacing.medium)
+                    )
+                }
+                "notes_screen" -> {
+                    QuickTip(
+                        title = "Search Everything",
+                        description = "Use the search bar to find notes by content or transcribed text.",
+                        isVisible = true,
+                        onDismiss = { 
+                            quickTipsDismissed = true
+                            helpPrefs.dismissQuickTip(helpKey)
+                        },
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .padding(top = Spacing.medium)
+                    )
+                }
+                "settings_screen" -> {
+                    QuickTip(
+                        title = "Validate Settings",
+                        description = "Always test your API settings before recording to ensure everything works properly.",
+                        isVisible = true,
+                        onDismiss = { 
+                            quickTipsDismissed = true
+                            helpPrefs.dismissQuickTip(helpKey)
+                        },
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .padding(top = Spacing.medium)
+                    )
+                }
             }
         }
     }

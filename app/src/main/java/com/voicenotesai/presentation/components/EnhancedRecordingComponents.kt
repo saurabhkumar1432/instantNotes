@@ -33,6 +33,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.FilledIconButton
@@ -50,6 +51,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -269,11 +271,10 @@ fun EnhancedRecordButton(
                     label = "button-icon-transition"
                 ) { state ->
                     when (state) {
-                        RecordingButtonState.Idle -> Icon(
-                            imageVector = Icons.Default.Info,
-                            contentDescription = null,
-                            tint = iconColor,
-                            modifier = Modifier.size(48.dp)
+                        RecordingButtonState.Idle -> Box(
+                            modifier = Modifier
+                                .size(48.dp)
+                                .background(iconColor, CircleShape)
                         )
                         RecordingButtonState.Recording -> Icon(
                             imageVector = Icons.Default.Close,
@@ -445,7 +446,9 @@ private fun LoadingSpinner(
         imageVector = Icons.Default.Refresh,
         contentDescription = null,
         tint = color,
-        modifier = modifier.size(size)
+        modifier = modifier
+            .size(size)
+            .rotate(rotation)
     )
 }
 

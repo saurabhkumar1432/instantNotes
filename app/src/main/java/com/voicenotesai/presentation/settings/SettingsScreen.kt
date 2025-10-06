@@ -160,12 +160,14 @@ fun SettingsScreen(
 						readOnly = true,
 						label = { Text("AI provider") },
 						trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-						modifier = Modifier.fillMaxWidth(),
+						modifier = Modifier
+							.fillMaxWidth()
+							.menuAnchor(),
 						colors = TextFieldDefaults.outlinedTextFieldColors(
 							containerColor = Color.Transparent
 						)
 					)
-					DropdownMenu(
+					ExposedDropdownMenu(
 						expanded = expanded,
 						onDismissRequest = { expanded = false }
 					) {

@@ -110,9 +110,6 @@ import com.voicenotesai.presentation.components.SmartRetryButton
 import com.voicenotesai.presentation.theme.ExtendedTypography
 import com.voicenotesai.presentation.theme.Spacing
 import com.voicenotesai.presentation.theme.glassLayer
-import com.voicenotesai.presentation.help.HelpTours
-import com.voicenotesai.presentation.help.integration.HelpEnabledScreen
-import com.voicenotesai.presentation.help.integration.helpTarget
 
 @OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -184,7 +181,6 @@ fun MainScreen(
 							.semantics {
 								contentDescription = "View all saved notes"
 							}
-							.helpTarget("notes_button")
 					) {
 						Icon(
 							imageVector = Icons.Default.List,
@@ -200,7 +196,6 @@ fun MainScreen(
 							.semantics {
 								contentDescription = "Open AI settings and configuration"
 							}
-							.helpTarget("settings_button")
 					) {
 						Icon(
 							imageVector = Icons.Default.Settings,
@@ -211,11 +206,7 @@ fun MainScreen(
 			)
 		}
 	) { paddingValues ->
-		HelpEnabledScreen(
-			helpKey = "main_screen",
-			enabledTours = listOf(HelpTours.FIRST_TIME_USER, HelpTours.RECORDING_FEATURES),
-			showHelpButton = true,
-			autoStartTour = false,
+		Box(
 			modifier = Modifier
 				.fillMaxSize()
 				.padding(paddingValues)
@@ -489,8 +480,7 @@ private fun IdleContent(
 			recordingState = RecordingButtonState.Idle,
 			onStartRecording = onRecordClick,
 			onStopRecording = {},
-			duration = 0L,
-			modifier = Modifier.helpTarget("record_button")
+			duration = 0L
 		)
 
 		Spacer(modifier = Modifier.height(Spacing.large))

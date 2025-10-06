@@ -80,9 +80,6 @@ import com.voicenotesai.presentation.notes.components.NotesSearchBar
 import com.voicenotesai.presentation.theme.ExtendedTypography
 import com.voicenotesai.presentation.theme.Spacing
 import com.voicenotesai.presentation.theme.glassLayer
-import com.voicenotesai.presentation.help.HelpTours
-import com.voicenotesai.presentation.help.integration.HelpEnabledScreen
-import com.voicenotesai.presentation.help.integration.helpTarget
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -142,29 +139,20 @@ fun NotesScreen(
                 }
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
-    ) { paddingValues ->
-        HelpEnabledScreen(
-            helpKey = "notes_screen",
-            enabledTours = listOf(HelpTours.NOTES_MANAGEMENT),
-            showHelpButton = true,
-            autoStartTour = false
-        ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            // Simple search bar
-            NotesSearchBar(
-                searchQuery = searchQuery,
-                onSearchQueryChange = { searchQuery = it },
-                modifier = Modifier
-                    .padding(Spacing.medium)
-                    .helpTarget("search_bar")
-            )
-            
-            // Notes content with basic filtering
+		snackbarHost = { SnackbarHost(snackbarHostState) }
+	) { paddingValues ->
+		Column(
+			modifier = Modifier
+				.fillMaxSize()
+				.padding(paddingValues)
+		) {
+			// Simple search bar
+			NotesSearchBar(
+				searchQuery = searchQuery,
+				onSearchQueryChange = { searchQuery = it },
+				modifier = Modifier
+					.padding(Spacing.medium)
+			)            // Notes content with basic filtering
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -232,14 +220,11 @@ fun NotesScreen(
                     viewModel.deleteNote(note.id)
                     noteToDelete = null
                 },
-                onDismiss = { noteToDelete = null }
-            )
-        }
-        }
-    }
-}
-
-@Composable
+				onDismiss = { noteToDelete = null }
+			)
+		}
+	}
+}@Composable
 private fun NotesList(
     notes: List<Note>,
     onNoteClick: (Long) -> Unit,
