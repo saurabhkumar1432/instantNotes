@@ -10,6 +10,7 @@ import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import androidx.core.content.ContextCompat
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -56,6 +57,9 @@ class AudioRepositoryImpl @Inject constructor(
             return@callbackFlow
         }
 
+        val producerScope = this
+        var durationJob: Job? = null
+
         // Clean up any existing recognizer
         cleanup()
         stopRequested = false
@@ -70,6 +74,27 @@ class AudioRepositoryImpl @Inject constructor(
                 recordingStartTime = System.currentTimeMillis()
                 hasReceivedSpeech = false
                 trySend(RecordingState.Recording(0))
+
+                durationJob?.cancel()
+                durationJob = producerScope.launch {
+                    while (isCurrentlyRecording && !stopRequested) {
+                        val duration = System.currentTimeMillis() - recordingStartTime
+
+                        // Check for max duration
+                        if (duration >= maxRecordingDuration) {
+                            try {
+                                speechRecognizer?.stopListening()
+                                trySend(RecordingState.Error("Maximum recording duration of 5 minutes reached"))
+                            } catch (e: Exception) {
+                                // Ignore
+                            }
+                            break
+                        }
+
+                        trySend(RecordingState.Recording(duration))
+                        kotlinx.coroutines.delay(1000)
+                    }
+                }
             }
 
             override fun onBeginningOfSpeech() {
@@ -87,20 +112,16 @@ class AudioRepositoryImpl @Inject constructor(
             }
 
             override fun onEndOfSpeech() {
-                if (!stopRequested) {
-                    isCurrentlyRecording = false
-                    trySend(RecordingState.Processing)
-                }
+                isCurrentlyRecording = false
+                durationJob?.cancel()
+                durationJob = null
+                trySend(RecordingState.Processing)
             }
 
             override fun onError(error: Int) {
-                // Don't process errors if we manually stopped
-                if (stopRequested) {
-                    isCurrentlyRecording = false
-                    return
-                }
-                
                 isCurrentlyRecording = false
+                durationJob?.cancel()
+                durationJob = null
                 val hadSpeech = hasReceivedSpeech
                 hasReceivedSpeech = false
                 
@@ -141,6 +162,8 @@ class AudioRepositoryImpl @Inject constructor(
 
             override fun onResults(results: Bundle?) {
                 isCurrentlyRecording = false
+                durationJob?.cancel()
+                durationJob = null
                 hasReceivedSpeech = false
                 
                 // CRITICAL: Use try-finally to ensure Flow always closes
@@ -211,39 +234,10 @@ class AudioRepositoryImpl @Inject constructor(
             return@callbackFlow
         }
 
-        // Launch a separate coroutine for smooth duration updates
-        // This is independent of the high-frequency onRmsChanged callback
-        val durationJob = launch {
-            while (isCurrentlyRecording && !stopRequested) {
-                try {
-                    val duration = System.currentTimeMillis() - recordingStartTime
-                    
-                    // Check for max duration
-                    if (duration >= maxRecordingDuration) {
-                        try {
-                            speechRecognizer?.stopListening()
-                            trySend(RecordingState.Error("Maximum recording duration of 5 minutes reached"))
-                        } catch (e: Exception) {
-                            // Ignore
-                        }
-                        break
-                    }
-                    
-                    // Send duration update
-                    trySend(RecordingState.Recording(duration))
-                    
-                    // Wait 200ms before next update for smoother, more visible timer
-                    kotlinx.coroutines.delay(200)
-                } catch (e: Exception) {
-                    // Flow might be closed, exit gracefully
-                    break
-                }
-            }
-        }
-
         awaitClose {
             // Cancel duration updates first
-            durationJob.cancel()
+            durationJob?.cancel()
+            durationJob = null
             // This is called when Flow is cancelled (e.g., navigation away, config change)
             cleanup()
         }

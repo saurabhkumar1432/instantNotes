@@ -109,10 +109,17 @@ fun MainScreen(
             AnimatedContent(
                 targetState = uiState,
                 transitionSpec = {
-                    fadeIn(animationSpec = tween(300)) + 
-                        slideInVertically(animationSpec = tween(300)) { it / 4 } togetherWith
-                        fadeOut(animationSpec = tween(300)) +
-                        slideOutVertically(animationSpec = tween(300)) { -it / 4 }
+                    val initial = initialState
+                    val target = targetState
+                    if (initial is MainUiState.Recording && target is MainUiState.Recording) {
+                        EnterTransition.None togetherWith ExitTransition.None
+                    } else {
+                        val enter = fadeIn(animationSpec = tween(300)) +
+                            slideInVertically(animationSpec = tween(300)) { it / 4 }
+                        val exit = fadeOut(animationSpec = tween(300)) +
+                            slideOutVertically(animationSpec = tween(300)) { -it / 4 }
+                        enter togetherWith exit
+                    }
                 },
                 label = "stateTransition"
             ) { state ->
