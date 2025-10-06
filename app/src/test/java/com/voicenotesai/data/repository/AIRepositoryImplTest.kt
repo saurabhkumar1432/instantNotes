@@ -28,6 +28,10 @@ class AIRepositoryImplTest {
     private lateinit var googleAIService: GoogleAIService
     private val testDispatcher = StandardTestDispatcher()
     private val gson = Gson()
+    
+    companion object {
+        private const val TEST_PROMPT_TEMPLATE = "Convert the following transcription into structured notes:\n{transcription}"
+    }
 
     @Before
     fun setup() {
@@ -96,7 +100,8 @@ class AIRepositoryImplTest {
             provider = AIProvider.OPENAI,
             apiKey = "test-api-key",
             model = "gpt-4",
-            transcribedText = "This is a test transcription"
+            transcribedText = "This is a test transcription",
+            promptTemplate = TEST_PROMPT_TEMPLATE
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -130,7 +135,8 @@ class AIRepositoryImplTest {
             provider = AIProvider.OPENAI,
             apiKey = "invalid-key",
             model = "gpt-4",
-            transcribedText = "Test"
+            transcribedText = "Test",
+            promptTemplate = TEST_PROMPT_TEMPLATE
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -154,7 +160,8 @@ class AIRepositoryImplTest {
             provider = AIProvider.OPENAI,
             apiKey = "test-key",
             model = "gpt-4",
-            transcribedText = "Test"
+            transcribedText = "Test",
+            promptTemplate = TEST_PROMPT_TEMPLATE
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -187,7 +194,8 @@ class AIRepositoryImplTest {
             provider = AIProvider.OPENAI,
             apiKey = "test-key",
             model = "gpt-4",
-            transcribedText = "Test"
+            transcribedText = "Test",
+            promptTemplate = TEST_PROMPT_TEMPLATE
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -228,7 +236,8 @@ class AIRepositoryImplTest {
             provider = AIProvider.ANTHROPIC,
             apiKey = "test-api-key",
             model = "claude-3-opus-20240229",
-            transcribedText = "This is a test transcription"
+            transcribedText = "This is a test transcription",
+            promptTemplate = TEST_PROMPT_TEMPLATE
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -262,7 +271,8 @@ class AIRepositoryImplTest {
             provider = AIProvider.ANTHROPIC,
             apiKey = "invalid-key",
             model = "claude-3-opus-20240229",
-            transcribedText = "Test"
+            transcribedText = "Test",
+            promptTemplate = TEST_PROMPT_TEMPLATE
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -286,7 +296,8 @@ class AIRepositoryImplTest {
             provider = AIProvider.ANTHROPIC,
             apiKey = "test-key",
             model = "claude-3-opus-20240229",
-            transcribedText = "Test"
+            transcribedText = "Test",
+            promptTemplate = TEST_PROMPT_TEMPLATE
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -320,7 +331,8 @@ class AIRepositoryImplTest {
             provider = AIProvider.ANTHROPIC,
             apiKey = "test-key",
             model = "claude-3-opus-20240229",
-            transcribedText = "Test"
+            transcribedText = "Test",
+            promptTemplate = TEST_PROMPT_TEMPLATE
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -364,7 +376,8 @@ class AIRepositoryImplTest {
             provider = AIProvider.GOOGLE_AI,
             apiKey = "test-api-key",
             model = "gemini-pro",
-            transcribedText = "This is a test transcription"
+            transcribedText = "This is a test transcription",
+            promptTemplate = TEST_PROMPT_TEMPLATE
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -398,7 +411,8 @@ class AIRepositoryImplTest {
             provider = AIProvider.GOOGLE_AI,
             apiKey = "invalid-key",
             model = "gemini-pro",
-            transcribedText = "Test"
+            transcribedText = "Test",
+            promptTemplate = TEST_PROMPT_TEMPLATE
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -422,7 +436,8 @@ class AIRepositoryImplTest {
             provider = AIProvider.GOOGLE_AI,
             apiKey = "test-key",
             model = "gemini-pro",
-            transcribedText = "Test"
+            transcribedText = "Test",
+            promptTemplate = TEST_PROMPT_TEMPLATE
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -456,7 +471,8 @@ class AIRepositoryImplTest {
             provider = AIProvider.GOOGLE_AI,
             apiKey = "test-key",
             model = "gemini-pro",
-            transcribedText = "Test"
+            transcribedText = "Test",
+            promptTemplate = TEST_PROMPT_TEMPLATE
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -476,7 +492,8 @@ class AIRepositoryImplTest {
             provider = AIProvider.OPENAI,
             apiKey = "test-key",
             model = "gpt-4",
-            transcribedText = "Test"
+            transcribedText = "Test",
+            promptTemplate = TEST_PROMPT_TEMPLATE
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -507,7 +524,8 @@ class AIRepositoryImplTest {
             provider = AIProvider.OPENAI,
             apiKey = "test-key",
             model = "gpt-4",
-            transcribedText = "Test"
+            transcribedText = "Test",
+            promptTemplate = TEST_PROMPT_TEMPLATE
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -531,7 +549,8 @@ class AIRepositoryImplTest {
             provider = AIProvider.OPENAI,
             apiKey = "test-key",
             model = "gpt-4",
-            transcribedText = "Test"
+            transcribedText = "Test",
+            promptTemplate = TEST_PROMPT_TEMPLATE
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -553,7 +572,8 @@ class AIRepositoryImplTest {
             provider = AIProvider.OPENAI,
             apiKey = "test-key",
             model = "gpt-4",
-            transcribedText = "Test"
+            transcribedText = "Test",
+            promptTemplate = TEST_PROMPT_TEMPLATE
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -593,7 +613,8 @@ class AIRepositoryImplTest {
             provider = AIProvider.OPENAI,
             apiKey = "test-api-key",
             model = "gpt-4",
-            transcribedText = "Test"
+            transcribedText = "Test",
+            promptTemplate = TEST_PROMPT_TEMPLATE
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -633,7 +654,8 @@ class AIRepositoryImplTest {
             provider = AIProvider.ANTHROPIC,
             apiKey = "test-api-key",
             model = "claude-3-opus-20240229",
-            transcribedText = "Test"
+            transcribedText = "Test",
+            promptTemplate = TEST_PROMPT_TEMPLATE
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
