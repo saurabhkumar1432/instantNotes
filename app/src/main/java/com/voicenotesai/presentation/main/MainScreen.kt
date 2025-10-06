@@ -75,6 +75,12 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -88,8 +94,25 @@ import com.voicenotesai.domain.model.canRetry
 import com.voicenotesai.domain.model.getActionGuidance
 import com.voicenotesai.domain.model.shouldNavigateToSettings
 import com.voicenotesai.domain.model.toUserMessage
+import com.voicenotesai.presentation.animations.AnimationConfig
+import com.voicenotesai.presentation.animations.SlideInContent
+import com.voicenotesai.presentation.animations.SlideDirection
+import com.voicenotesai.presentation.animations.bouncyClickable
+import com.voicenotesai.presentation.animations.pulseAnimation
+import com.voicenotesai.presentation.components.EnhancedErrorCard
+import com.voicenotesai.presentation.components.EnhancedRecordButton
+import com.voicenotesai.presentation.components.EnhancedWaveformIndicator
+import com.voicenotesai.presentation.components.RecordingButtonState
+import com.voicenotesai.presentation.components.RecordingQuality
+import com.voicenotesai.presentation.components.RecordingQualityIndicator
+import com.voicenotesai.presentation.components.RetryType
+import com.voicenotesai.presentation.components.SmartRetryButton
+import com.voicenotesai.presentation.theme.ExtendedTypography
 import com.voicenotesai.presentation.theme.Spacing
 import com.voicenotesai.presentation.theme.glassLayer
+import com.voicenotesai.presentation.help.HelpTours
+import com.voicenotesai.presentation.help.integration.HelpEnabledScreen
+import com.voicenotesai.presentation.help.integration.helpTarget
 
 @OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -151,23 +174,48 @@ fun MainScreen(
 					actionIconContentColor = MaterialTheme.colorScheme.onBackground
 				),
 				actions = {
-					IconButton(onClick = onNavigateToNotes) {
+					val haptic = LocalHapticFeedback.current
+					IconButton(
+						onClick = {
+							haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+							onNavigateToNotes()
+						},
+						modifier = Modifier
+							.semantics {
+								contentDescription = "View all saved notes"
+							}
+							.helpTarget("notes_button")
+					) {
 						Icon(
 							imageVector = Icons.Default.List,
-							contentDescription = "View all saved notes"
+							contentDescription = null // Already provided by parent
 						)
 					}
-					IconButton(onClick = onNavigateToSettings) {
+					IconButton(
+						onClick = {
+							haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+							onNavigateToSettings()
+						},
+						modifier = Modifier
+							.semantics {
+								contentDescription = "Open AI settings and configuration"
+							}
+							.helpTarget("settings_button")
+					) {
 						Icon(
 							imageVector = Icons.Default.Settings,
-							contentDescription = "Open settings"
+							contentDescription = null // Already provided by parent
 						)
 					}
 				}
 			)
 		}
 	) { paddingValues ->
-		Box(
+		HelpEnabledScreen(
+			helpKey = "main_screen",
+			enabledTours = listOf(HelpTours.FIRST_TIME_USER, HelpTours.RECORDING_FEATURES),
+			showHelpButton = true,
+			autoStartTour = false,
 			modifier = Modifier
 				.fillMaxSize()
 				.padding(paddingValues)
@@ -200,7 +248,8 @@ fun MainScreen(
 								microphonePermissionState.status.shouldShowRationale -> showPermissionRationale = true
 								else -> microphonePermissionState.launchPermissionRequest()
 							}
-						}
+						},
+						modifier = Modifier.fillMaxSize()
 					)
 
 					is MainUiState.PermissionRequired -> PermissionRequiredContent(
@@ -246,17 +295,48 @@ fun MainScreen(
 			}
 
 			if (uiState is MainUiState.Error) {
-				ErrorDialog(
-					error = (uiState as MainUiState.Error).error,
-					onDismiss = { viewModel.clearError() },
-					onRetry = {
-						viewModel.clearError()
-						if (microphonePermissionState.status.isGranted) {
-							viewModel.startRecording()
+				val error = (uiState as MainUiState.Error).error
+				
+				Column(
+					modifier = Modifier
+						.align(Alignment.BottomCenter)
+						.padding(Spacing.medium),
+					verticalArrangement = Arrangement.spacedBy(Spacing.medium),
+					horizontalAlignment = Alignment.CenterHorizontally
+				) {
+					// Smart retry suggestion based on error type
+					val errorMessage = error.toUserMessage()
+					val retryType = when {
+						errorMessage.contains("microphone", ignoreCase = true) || 
+						errorMessage.contains("audio", ignoreCase = true) -> RetryType.CheckMicrophone
+						errorMessage.contains("network", ignoreCase = true) || 
+						errorMessage.contains("connection", ignoreCase = true) -> RetryType.CheckConnection
+						else -> RetryType.RecordAgain
+					}
+					
+					SmartRetryButton(
+						retryType = retryType,
+						onRetry = {
+							viewModel.clearError()
+							if (microphonePermissionState.status.isGranted) {
+								viewModel.startRecording()
+							}
 						}
-					},
-					onNavigateToSettings = onNavigateToSettings
-				)
+					)
+
+					EnhancedErrorCard(
+						error = error,
+						onDismiss = { viewModel.clearError() },
+						onRetry = {
+							viewModel.clearError()
+							if (microphonePermissionState.status.isGranted) {
+								viewModel.startRecording()
+							}
+						},
+						onNavigateToSettings = onNavigateToSettings,
+						modifier = Modifier.fillMaxWidth()
+					)
+				}
 			}
 		}
 	}
@@ -322,7 +402,8 @@ fun MainScreen(
 
 @Composable
 private fun IdleContent(
-	onRecordClick: () -> Unit
+	onRecordClick: () -> Unit,
+	modifier: Modifier = Modifier
 ) {
 	Column(
 		modifier = Modifier
@@ -404,7 +485,13 @@ private fun IdleContent(
 
 		Spacer(modifier = Modifier.height(Spacing.huge))
 
-		RecordButton(isRecording = false, onClick = onRecordClick)
+		EnhancedRecordButton(
+			recordingState = RecordingButtonState.Idle,
+			onStartRecording = onRecordClick,
+			onStopRecording = {},
+			duration = 0L,
+			modifier = Modifier.helpTarget("record_button")
+		)
 
 		Spacer(modifier = Modifier.height(Spacing.large))
 
@@ -472,108 +559,50 @@ private fun PermissionRequiredContent(
 }
 
 @Composable
-private fun ErrorDialog(
-	error: AppError,
-	onDismiss: () -> Unit,
-	onRetry: () -> Unit,
-	onNavigateToSettings: () -> Unit
-) {
-	val userMessage = error.toUserMessage()
-	val actionGuidance = error.getActionGuidance()
-	val canRetry = error.canRetry()
-	val shouldGoToSettings = error.shouldNavigateToSettings()
-
-	AlertDialog(
-		onDismissRequest = onDismiss,
-		title = {
-			Text(
-				text = "Something went wrong",
-				color = MaterialTheme.colorScheme.error
-			)
-		},
-		text = {
-			Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
-				Text(text = userMessage)
-				actionGuidance?.let {
-					Text(
-						text = it,
-						style = MaterialTheme.typography.bodySmall,
-						color = MaterialTheme.colorScheme.onSurfaceVariant
-					)
-				}
-			}
-		},
-		confirmButton = {
-			when {
-				shouldGoToSettings -> {
-					TextButton(onClick = {
-						onDismiss()
-						onNavigateToSettings()
-					}) {
-						Text("Go to Settings")
-					}
-				}
-
-				canRetry -> {
-					TextButton(onClick = {
-						onDismiss()
-						onRetry()
-					}) {
-						Text("Retry")
-					}
-				}
-
-				else -> {
-					TextButton(onClick = onDismiss) {
-						Text("OK")
-					}
-				}
-			}
-		},
-		dismissButton = {
-			if (shouldGoToSettings || canRetry) {
-				TextButton(onClick = onDismiss) {
-					Text("Cancel")
-				}
-			}
-		}
-	)
-}
-
-@Composable
 private fun RecordingContent(
 	duration: Long,
 	onStopClick: () -> Unit
 ) {
+	// Simulate recording quality based on duration (in real app, this would come from audio analysis)
+	val recordingQuality = remember(duration) {
+		when {
+			duration < 1000 -> RecordingQuality.Poor
+			duration < 3000 -> RecordingQuality.Fair
+			duration < 10000 -> RecordingQuality.Good
+			else -> RecordingQuality.Excellent
+		}
+	}
+
 	Column(
 		modifier = Modifier
 			.fillMaxSize()
 			.verticalScroll(rememberScrollState()),
-		horizontalAlignment = Alignment.CenterHorizontally
+		horizontalAlignment = Alignment.CenterHorizontally,
+		verticalArrangement = Arrangement.spacedBy(Spacing.large)
 	) {
-		Spacer(modifier = Modifier.height(Spacing.large))
+		Spacer(modifier = Modifier.height(Spacing.medium))
 
-		Text(
-			text = "🎤 Listening...",
-			style = MaterialTheme.typography.headlineLarge,
-			fontWeight = FontWeight.ExtraBold
-		)
+		Column(
+			horizontalAlignment = Alignment.CenterHorizontally,
+			verticalArrangement = Arrangement.spacedBy(Spacing.small)
+		) {
+			Text(
+				text = "🎤 Listening...",
+				style = MaterialTheme.typography.headlineLarge,
+				fontWeight = FontWeight.ExtraBold
+			)
 
-		Spacer(modifier = Modifier.height(Spacing.small))
+			RecordingQualityIndicator(
+				quality = recordingQuality,
+				modifier = Modifier.padding(horizontal = Spacing.medium)
+			)
+		}
 
-		Text(
-			text = formatDuration(duration),
-			style = MaterialTheme.typography.displayMedium,
-			color = MaterialTheme.colorScheme.primary,
-			fontWeight = FontWeight.Bold
-		)
-
-		Spacer(modifier = Modifier.height(Spacing.large))
-
+		// Enhanced waveform visualization
 		Box(
 			modifier = Modifier
 				.fillMaxWidth()
-				.height(160.dp)
+				.height(140.dp)
 				.border(
 					width = 3.dp,
 					brush = Brush.horizontalGradient(
@@ -588,30 +617,38 @@ private fun RecordingContent(
 					color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
 					shape = RoundedCornerShape(28.dp)
 				)
-				.padding(horizontal = Spacing.large, vertical = Spacing.large)
+				.padding(Spacing.large)
 		) {
-			WaveformIndicator(
-				modifier = Modifier
-					.fillMaxWidth()
-					.fillMaxHeight()
+			EnhancedWaveformIndicator(
+				isActive = true,
+				intensity = when (recordingQuality) {
+					RecordingQuality.Poor -> 0.3f
+					RecordingQuality.Fair -> 0.6f
+					RecordingQuality.Good -> 0.8f
+					RecordingQuality.Excellent -> 1f
+				},
+				modifier = Modifier.fillMaxWidth()
 			)
 		}
 
-		Spacer(modifier = Modifier.height(Spacing.huge))
-
-		RecordButton(isRecording = true, onClick = onStopClick)
-
-		Spacer(modifier = Modifier.height(Spacing.large))
+		// Enhanced record button with stop functionality
+		EnhancedRecordButton(
+			recordingState = RecordingButtonState.Recording,
+			onStartRecording = {},
+			onStopRecording = onStopClick,
+			duration = duration
+		)
 
 		Text(
-			text = "Done? Tap to stop and let the magic happen ✨",
+			text = "Speak clearly for best results ✨\nTap stop when you're done",
 			style = MaterialTheme.typography.bodyLarge,
 			color = MaterialTheme.colorScheme.onSurfaceVariant,
 			fontWeight = FontWeight.Medium,
-			textAlign = TextAlign.Center
+			textAlign = TextAlign.Center,
+			lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.3
 		)
 
-		Spacer(modifier = Modifier.height(Spacing.extraLarge))
+		Spacer(modifier = Modifier.height(Spacing.medium))
 	}
 }
 
@@ -626,10 +663,13 @@ private fun ProcessingContent(
 		horizontalAlignment = Alignment.CenterHorizontally,
 		verticalArrangement = Arrangement.Center
 	) {
-		CircularProgressIndicator(
-			modifier = Modifier.size(72.dp),
-			color = MaterialTheme.colorScheme.primary,
-			trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+		// Enhanced processing button (non-interactive)
+		EnhancedRecordButton(
+			recordingState = RecordingButtonState.Processing,
+			onStartRecording = {},
+			onStopRecording = {},
+			duration = 0L,
+			enabled = false
 		)
 
 		Spacer(modifier = Modifier.height(Spacing.large))
@@ -640,11 +680,24 @@ private fun ProcessingContent(
 				.glassLayer(RoundedCornerShape(28.dp))
 				.padding(Spacing.large)
 		) {
-			Text(
-				text = message,
-				style = MaterialTheme.typography.bodyLarge,
-				textAlign = TextAlign.Center
-			)
+			Column(
+				horizontalAlignment = Alignment.CenterHorizontally,
+				verticalArrangement = Arrangement.spacedBy(Spacing.medium)
+			) {
+				Text(
+					text = message,
+					style = MaterialTheme.typography.bodyLarge,
+					textAlign = TextAlign.Center,
+					fontWeight = FontWeight.Medium
+				)
+				
+				Text(
+					text = "🧠 AI is working its magic...",
+					style = MaterialTheme.typography.bodyMedium,
+					color = MaterialTheme.colorScheme.onSurfaceVariant,
+					textAlign = TextAlign.Center
+				)
+			}
 		}
 	}
 }
@@ -656,12 +709,18 @@ private fun SuccessContent(
 	onShare: () -> Unit,
 	onNewRecording: () -> Unit
 ) {
-	Column(
-		modifier = Modifier
-			.fillMaxSize()
-			.verticalScroll(rememberScrollState()),
-		verticalArrangement = Arrangement.spacedBy(Spacing.large)
+	val haptic = LocalHapticFeedback.current
+	
+	SlideInContent(
+		visible = true,
+		slideDirection = SlideDirection.Bottom
 	) {
+		Column(
+			modifier = Modifier
+				.fillMaxSize()
+				.verticalScroll(rememberScrollState()),
+			verticalArrangement = Arrangement.spacedBy(Spacing.large)
+		) {
 		Spacer(modifier = Modifier.height(Spacing.small))
 
 		Text(
@@ -693,7 +752,7 @@ private fun SuccessContent(
 		) {
 			Text(
 				text = notes,
-				style = MaterialTheme.typography.bodyLarge,
+				style = ExtendedTypography.noteContent,
 				color = MaterialTheme.colorScheme.onSurface,
 				modifier = Modifier
 					.fillMaxWidth()
@@ -704,119 +763,66 @@ private fun SuccessContent(
 		}
 
 		Button(
-			onClick = onCopy,
-			modifier = Modifier.fillMaxWidth(),
+			onClick = {
+				haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+				onCopy()
+			},
+			modifier = Modifier
+				.fillMaxWidth()
+				.semantics {
+					contentDescription = "Copy generated notes to clipboard"
+				},
 			colors = ButtonDefaults.buttonColors(
 				containerColor = MaterialTheme.colorScheme.secondaryContainer,
 				contentColor = MaterialTheme.colorScheme.onSecondaryContainer
 			)
 		) {
-			Text("📋 Copy to clipboard", fontWeight = FontWeight.Bold)
+			Text(
+				"📋 Copy to clipboard", 
+				style = ExtendedTypography.buttonText
+			)
 		}
 
 		Button(
-			onClick = onShare,
-			modifier = Modifier.fillMaxWidth(),
+			onClick = {
+				haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+				onShare()
+			},
+			modifier = Modifier
+				.fillMaxWidth()
+				.semantics {
+					contentDescription = "Share generated notes with other apps"
+				},
 			colors = ButtonDefaults.buttonColors(
 				containerColor = MaterialTheme.colorScheme.tertiaryContainer,
 				contentColor = MaterialTheme.colorScheme.onTertiaryContainer
 			)
 		) {
-			Text("📤 Share with friends", fontWeight = FontWeight.Bold)
+			Text(
+				"📤 Share with friends", 
+				style = ExtendedTypography.buttonText
+			)
 		}
 
 		Button(
-			onClick = onNewRecording,
-			modifier = Modifier.fillMaxWidth()
+			onClick = {
+				haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+				onNewRecording()
+			},
+			modifier = Modifier
+				.fillMaxWidth()
+				.semantics {
+					contentDescription = "Start a new voice recording"
+				}
 		) {
-			Text("🎙️ Record another banger", fontWeight = FontWeight.Bold)
+			Text(
+				"🎙️ Record another banger", 
+				style = ExtendedTypography.buttonText
+			)
 		}
 
 		Spacer(modifier = Modifier.height(Spacing.small))
 	}
-}
-
-@Composable
-private fun RecordButton(
-	isRecording: Boolean,
-	onClick: () -> Unit,
-	enabled: Boolean = true
-) {
-	val infiniteTransition = rememberInfiniteTransition(label = "record-pulse")
-
-	val scale by infiniteTransition.animateFloat(
-		initialValue = 1f,
-		targetValue = if (isRecording) 1.12f else 1f,
-		animationSpec = infiniteRepeatable(
-			animation = tween(820, easing = FastOutSlowInEasing),
-			repeatMode = RepeatMode.Reverse
-		),
-		label = "record-scale"
-	)
-
-	val rippleAlpha by infiniteTransition.animateFloat(
-		initialValue = if (isRecording) 0.4f else 0.15f,
-		targetValue = 0f,
-		animationSpec = infiniteRepeatable(
-			animation = tween(1400, easing = LinearEasing),
-			repeatMode = RepeatMode.Restart
-		),
-		label = "record-alpha"
-	)
-
-	val rippleScale by infiniteTransition.animateFloat(
-		initialValue = 1f,
-		targetValue = if (isRecording) 1.45f else 1.1f,
-		animationSpec = infiniteRepeatable(
-			animation = tween(1400, easing = FastOutSlowInEasing),
-			repeatMode = RepeatMode.Restart
-		),
-		label = "record-ripple"
-	)
-
-	val buttonColor = if (isRecording) {
-		MaterialTheme.colorScheme.error
-	} else {
-		MaterialTheme.colorScheme.primary
-	}
-
-	Box(
-		contentAlignment = Alignment.Center,
-		modifier = Modifier.size(180.dp)
-	) {
-		Box(
-			modifier = Modifier
-				.size(160.dp)
-				.background(
-					brush = Brush.radialGradient(
-						colors = listOf(buttonColor.copy(alpha = rippleAlpha), Color.Transparent)
-					),
-					shape = CircleShape
-				)
-				.scale(rippleScale)
-				.blur(30.dp)
-		)
-
-		FilledIconButton(
-			onClick = onClick,
-			enabled = enabled,
-			modifier = Modifier
-				.size(132.dp)
-				.scale(scale),
-			colors = IconButtonDefaults.filledIconButtonColors(
-				containerColor = buttonColor
-			),
-			shape = CircleShape
-		) {
-			Box(
-				modifier = Modifier
-					.size(46.dp)
-					.background(
-						color = Color.White,
-						shape = if (isRecording) RoundedCornerShape(8.dp) else CircleShape
-					)
-			)
-		}
 	}
 }
 
@@ -825,6 +831,18 @@ private fun formatDuration(milliseconds: Long): String {
 	val minutes = totalSeconds / 60
 	val seconds = totalSeconds % 60
 	return String.format("%02d:%02d", minutes, seconds)
+}
+
+private fun formatDurationForAccessibility(milliseconds: Long): String {
+	val totalSeconds = milliseconds / 1000
+	val minutes = totalSeconds / 60
+	val seconds = totalSeconds % 60
+	
+	return when {
+		minutes > 0 -> "$minutes minutes and $seconds seconds"
+		seconds > 0 -> "$seconds seconds"
+		else -> "less than a second"
+	}
 }
 
 private fun copyToClipboard(context: Context, text: String) {
@@ -840,53 +858,4 @@ private fun shareNotes(context: Context, notes: String) {
 		putExtra(Intent.EXTRA_SUBJECT, "Voice Notes")
 	}
 	context.startActivity(Intent.createChooser(intent, "Share Notes"))
-}
-
-@Composable
-private fun WaveformIndicator(
-	modifier: Modifier = Modifier
-) {
-	val infiniteTransition = rememberInfiniteTransition(label = "waveform")
-	val barCount = 5
-	val barBrush = Brush.verticalGradient(
-		colors = listOf(
-			MaterialTheme.colorScheme.primary,
-			MaterialTheme.colorScheme.secondary,
-			MaterialTheme.colorScheme.primary
-		)
-	)
-
-	val barHeights = (0 until barCount).map { index ->
-		infiniteTransition.animateFloat(
-			initialValue = 0.3f,
-			targetValue = 1f,
-			animationSpec = infiniteRepeatable(
-				animation = tween(
-					durationMillis = 560 + (index * 120),
-					easing = FastOutSlowInEasing
-				),
-				repeatMode = RepeatMode.Reverse,
-				initialStartOffset = StartOffset(index * 90)
-			),
-			label = "waveform-bar-$index"
-		)
-	}
-
-	Row(
-		modifier = modifier,
-		horizontalArrangement = Arrangement.spacedBy(Spacing.small, Alignment.CenterHorizontally),
-		verticalAlignment = Alignment.CenterVertically
-	) {
-		barHeights.forEach { heightFraction ->
-			Box(
-				modifier = Modifier
-					.width(Spacing.small)
-					.fillMaxHeight(heightFraction.value)
-					.background(
-						brush = barBrush,
-						shape = RoundedCornerShape(Spacing.small)
-					)
-			)
-		}
-	}
 }

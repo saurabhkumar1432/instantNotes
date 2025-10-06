@@ -13,6 +13,7 @@ import com.voicenotesai.domain.model.shouldNavigateToSettings
 import com.voicenotesai.domain.model.toUserMessage
 import com.voicenotesai.domain.usecase.GenerateNotesUseCase
 import com.voicenotesai.domain.usecase.RecordVoiceUseCase
+import com.voicenotesai.presentation.performance.OptimizedViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -31,7 +32,7 @@ class MainViewModel @Inject constructor(
     private val notesRepository: NotesRepository,
     private val settingsRepository: SettingsRepository,
     private val savedStateHandle: SavedStateHandle
-) : ViewModel() {
+) : OptimizedViewModel() {
 
     companion object {
         private const val KEY_TRANSCRIBED_TEXT = "transcribed_text"
@@ -39,7 +40,7 @@ class MainViewModel @Inject constructor(
     }
 
     private val _uiState = MutableStateFlow<MainUiState>(MainUiState.Idle)
-    val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()
+    val uiState: StateFlow<MainUiState> = _uiState.asOptimizedStateFlow()
 
     private var currentTranscribedText: String?
         get() = savedStateHandle.get<String>(KEY_TRANSCRIBED_TEXT)
@@ -77,7 +78,11 @@ class MainViewModel @Inject constructor(
      * Checks if AI settings are configured on initialization.
      */
     private fun checkSettings() {
-        viewModelScope.launch {
+        safeLaunch(
+            onError = { error ->
+                _uiState.value = MainUiState.Error(AppError.SettingsNotConfigured)
+            }
+        ) {
             val hasSettings = settingsRepository.hasValidSettings()
             if (!hasSettings) {
                 _uiState.value = MainUiState.Error(AppError.SettingsNotConfigured)
@@ -92,18 +97,23 @@ class MainViewModel @Inject constructor(
         recordingRequested = true
         
         // Check if settings are configured
-        viewModelScope.launch {
+        safeLaunch(
+            onError = { error ->
+                _uiState.value = MainUiState.Error(AppError.SettingsNotConfigured)
+                recordingRequested = false
+            }
+        ) {
             if (!settingsRepository.hasValidSettings()) {
                 _uiState.value = MainUiState.Error(AppError.SettingsNotConfigured)
                 recordingRequested = false
-                return@launch
+                return@safeLaunch
             }
 
             // Check permission
             if (!recordVoiceUseCase.hasPermission()) {
                 _uiState.value = MainUiState.PermissionRequired
                 // Don't reset recordingRequested here - we'll start when permission is granted
-                return@launch
+                return@safeLaunch
             }
 
             // Start recording with comprehensive error handling

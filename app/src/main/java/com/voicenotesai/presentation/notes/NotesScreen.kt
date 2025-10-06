@@ -21,8 +21,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalIconButton
@@ -50,6 +52,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -57,8 +66,23 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.voicenotesai.data.local.entity.Note
 import com.voicenotesai.domain.model.toUserMessage
+import com.voicenotesai.presentation.animations.AnimatedListItem
+import com.voicenotesai.presentation.animations.bouncyClickable
+import com.voicenotesai.presentation.animations.SlideInContent
+import com.voicenotesai.presentation.animations.SlideDirection
+// import com.voicenotesai.presentation.notes.components.BatchDeleteDialog
+// import com.voicenotesai.presentation.notes.components.EmptySearchState
+// import com.voicenotesai.presentation.notes.components.NotesExportDialog
+// import com.voicenotesai.presentation.notes.components.NotesFilterRow
+import com.voicenotesai.presentation.notes.components.NotesSearchBar
+// import com.voicenotesai.presentation.notes.components.NotesSelectionToolbar
+// import com.voicenotesai.presentation.notes.components.NotesSortDropdown
+import com.voicenotesai.presentation.theme.ExtendedTypography
 import com.voicenotesai.presentation.theme.Spacing
 import com.voicenotesai.presentation.theme.glassLayer
+import com.voicenotesai.presentation.help.HelpTours
+import com.voicenotesai.presentation.help.integration.HelpEnabledScreen
+import com.voicenotesai.presentation.help.integration.helpTarget
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -75,11 +99,13 @@ fun NotesScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var noteToDelete by remember { mutableStateOf<Note?>(null) }
+    var searchQuery by remember { mutableStateOf("") }
     val snackbarHostState = remember { SnackbarHostState() }
 
     Scaffold(
         containerColor = Color.Transparent,
         topBar = {
+            val haptic = LocalHapticFeedback.current
             TopAppBar(
                 title = {
                     Column(verticalArrangement = Arrangement.spacedBy(Spacing.extraSmall)) {
@@ -94,54 +120,108 @@ fun NotesScreen(
                         )
                     }
                 },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Back"
-                        )
-                    }
-                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Transparent,
-                    titleContentColor = MaterialTheme.colorScheme.onBackground,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onBackground
-                )
+                    titleContentColor = MaterialTheme.colorScheme.onBackground
+                ),
+                navigationIcon = {
+                    IconButton(
+                        onClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            onNavigateBack()
+                        },
+                        modifier = Modifier.semantics {
+                            contentDescription = "Go back to recording screen"
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = null
+                        )
+                    }
+                }
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
-        Box(
+        HelpEnabledScreen(
+            helpKey = "notes_screen",
+            enabledTours = listOf(HelpTours.NOTES_MANAGEMENT),
+            showHelpButton = true,
+            autoStartTour = false
+        ) {
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            when (val state = uiState) {
-                is NotesUiState.Loading -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                }
-                is NotesUiState.Empty -> {
-                    EmptyState(modifier = Modifier.align(Alignment.Center))
-                }
-                is NotesUiState.Success -> {
-                    NotesList(
-                        notes = state.notes,
-                        onNoteClick = onNoteClick,
-                        onDeleteClick = { note -> noteToDelete = note }
-                    )
-                }
-                is NotesUiState.Error -> {
-                    LaunchedEffect(state.error) {
-                        val result = snackbarHostState.showSnackbar(
-                            message = state.error.toUserMessage(),
-                            actionLabel = "Retry",
-                            duration = SnackbarDuration.Long
-                        )
-                        if (result == SnackbarResult.ActionPerformed) {
-                            viewModel.clearError()
+            // Simple search bar
+            NotesSearchBar(
+                searchQuery = searchQuery,
+                onSearchQueryChange = { searchQuery = it },
+                modifier = Modifier
+                    .padding(Spacing.medium)
+                    .helpTarget("search_bar")
+            )
+            
+            // Notes content with basic filtering
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .weight(1f)
+            ) {
+                when (val state = uiState) {
+                    is NotesUiState.Loading -> {
+                        CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                    }
+                    is NotesUiState.Empty -> {
+                        if (searchQuery.isNotEmpty()) {
+                            EmptySearchState(
+                                searchQuery = searchQuery,
+                                onClearSearch = { searchQuery = "" },
+                                modifier = Modifier.align(Alignment.Center)
+                            )
+                        } else {
+                            EmptyState(modifier = Modifier.align(Alignment.Center))
                         }
                     }
-                    EmptyState(modifier = Modifier.align(Alignment.Center))
+                    is NotesUiState.Success -> {
+                        val filteredNotes = if (searchQuery.isNotEmpty()) {
+                            state.notes.filter { note ->
+                                note.content.contains(searchQuery, ignoreCase = true) ||
+                                        note.transcribedText?.contains(searchQuery, ignoreCase = true) == true
+                            }
+                        } else {
+                            state.notes
+                        }
+                        
+                        if (filteredNotes.isEmpty() && searchQuery.isNotEmpty()) {
+                            EmptySearchState(
+                                searchQuery = searchQuery,
+                                onClearSearch = { searchQuery = "" },
+                                modifier = Modifier.align(Alignment.Center)
+                            )
+                        } else {
+                            NotesList(
+                                notes = filteredNotes,
+                                onNoteClick = onNoteClick,
+                                onDeleteClick = { note -> noteToDelete = note }
+                            )
+                        }
+                    }
+                    is NotesUiState.Error -> {
+                        LaunchedEffect(state.error) {
+                            val result = snackbarHostState.showSnackbar(
+                                message = state.error.toUserMessage(),
+                                actionLabel = "Retry",
+                                duration = SnackbarDuration.Long
+                            )
+                            if (result == SnackbarResult.ActionPerformed) {
+                                viewModel.clearError()
+                            }
+                        }
+                        EmptyState(modifier = Modifier.align(Alignment.Center))
+                    }
                 }
             }
         }
@@ -154,6 +234,7 @@ fun NotesScreen(
                 },
                 onDismiss = { noteToDelete = null }
             )
+        }
         }
     }
 }
@@ -229,6 +310,10 @@ private fun NoteCard(
     onClick: () -> Unit,
     onDeleteClick: () -> Unit
 ) {
+    val haptic = LocalHapticFeedback.current
+    val timestamp = SimpleDateFormat("MMM d, h:mm a", Locale.getDefault()).format(Date(note.timestamp))
+    val preview = note.content.take(150).replace("\n", " ")
+    
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -246,7 +331,12 @@ private fun NoteCard(
                 color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
                 shape = RoundedCornerShape(24.dp)
             )
-            .clickable(onClick = onClick)
+            .bouncyClickable {
+                onClick()
+            }
+            .semantics {
+                contentDescription = "Note from $timestamp. Content: $preview. Double tap to open."
+            }
             .padding(Spacing.large),
         verticalArrangement = Arrangement.spacedBy(Spacing.medium)
     ) {
@@ -279,8 +369,15 @@ private fun NoteCard(
 			}
 			
 			FilledTonalIconButton(
-                onClick = onDeleteClick,
-                modifier = Modifier.size(42.dp),
+                onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onDeleteClick()
+                },
+                modifier = Modifier
+                    .size(42.dp)
+                    .semantics {
+                        contentDescription = "Delete note from $timestamp"
+                    },
                 colors = IconButtonDefaults.filledTonalIconButtonColors(
                     containerColor = MaterialTheme.colorScheme.errorContainer,
                     contentColor = MaterialTheme.colorScheme.error
@@ -288,7 +385,7 @@ private fun NoteCard(
             ) {
                 Icon(
                     imageVector = Icons.Default.Delete,
-                    contentDescription = "Delete note",
+                    contentDescription = null,
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -296,13 +393,55 @@ private fun NoteCard(
 
         Text(
             text = note.content,
-            style = MaterialTheme.typography.bodyLarge,
+            style = ExtendedTypography.noteContent,
             maxLines = 5,
             overflow = TextOverflow.Ellipsis,
-            color = MaterialTheme.colorScheme.onSurface,
-            fontWeight = FontWeight.Medium,
-            lineHeight = 24.sp
+            color = MaterialTheme.colorScheme.onSurface
         )
+    }
+}
+
+@Composable
+private fun EmptySearchState(
+    searchQuery: String,
+    onClearSearch: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .padding(horizontal = Spacing.extraLarge)
+            .border(
+                width = 3.dp,
+                color = MaterialTheme.colorScheme.outline,
+                shape = RoundedCornerShape(28.dp)
+            )
+            .background(
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                shape = RoundedCornerShape(28.dp)
+            )
+            .padding(Spacing.huge)
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(Spacing.medium)
+        ) {
+            Text(
+                text = "🔍 No matches found",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.ExtraBold
+            )
+            Text(
+                text = "No notes found for \"$searchQuery\". Try different keywords or clear the search.",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                fontWeight = FontWeight.Medium
+            )
+            
+            TextButton(onClick = onClearSearch) {
+                Text("Clear search")
+            }
+        }
     }
 }
 

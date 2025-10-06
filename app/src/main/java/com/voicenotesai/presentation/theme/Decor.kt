@@ -37,11 +37,8 @@ fun Modifier.glassLayer(shape: Shape = RoundedCornerShape(24.dp)): Modifier = co
  * Neo-brutalism shadow effect for cards and buttons
  */
 fun Modifier.brutalistShadow(
-    offsetX: Int = 6,
-    offsetY: Int = 6,
     shape: Shape = RoundedCornerShape(24.dp)
 ): Modifier = composed {
-    val shadowColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
     border(
         width = 3.dp,
         color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),

@@ -18,6 +18,7 @@ import androidx.navigation.navArgument
 import com.voicenotesai.presentation.main.MainScreen
 import com.voicenotesai.presentation.notes.NoteDetailScreen
 import com.voicenotesai.presentation.notes.NotesScreen
+import com.voicenotesai.presentation.onboarding.OnboardingScreen
 import com.voicenotesai.presentation.settings.SettingsScreen
 import com.voicenotesai.presentation.settings.SettingsViewModel
 
@@ -26,6 +27,7 @@ import com.voicenotesai.presentation.settings.SettingsViewModel
  */
 object NavRoutes {
     const val SETUP_CHECK = "setup_check"
+    const val ONBOARDING = "onboarding"
     const val MAIN = "main"
     const val SETTINGS = "settings"
     const val NOTES = "notes"
@@ -35,8 +37,9 @@ object NavRoutes {
 }
 
 /**
- * Sets up the navigation graph for the app.
+ * Sets up the navigation graph for the app with responsive layout support.
  */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 fun NavGraph(
     navController: NavHostController
@@ -62,8 +65,8 @@ fun NavGraph(
                             popUpTo(NavRoutes.SETUP_CHECK) { inclusive = true }
                         }
                     } else {
-                        // Settings not configured or not validated, navigate to settings
-                        navController.navigate(NavRoutes.SETTINGS) {
+                        // First time user - show onboarding
+                        navController.navigate(NavRoutes.ONBOARDING) {
                             popUpTo(NavRoutes.SETUP_CHECK) { inclusive = true }
                         }
                     }
@@ -71,12 +74,31 @@ fun NavGraph(
             }
             
             // Show a simple loading screen while checking
-            androidx.compose.foundation.layout.Box(
-                modifier = androidx.compose.ui.Modifier.fillMaxSize(),
-                contentAlignment = androidx.compose.ui.Alignment.Center
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
             ) {
-                androidx.compose.material3.CircularProgressIndicator()
+                CircularProgressIndicator()
             }
+        }
+        
+        // Onboarding flow
+        composable(NavRoutes.ONBOARDING) {
+            OnboardingScreen(
+                onNavigateToSettings = {
+                    navController.navigate(NavRoutes.SETTINGS)
+                },
+                onNavigateToMain = {
+                    navController.navigate(NavRoutes.MAIN) {
+                        popUpTo(NavRoutes.ONBOARDING) { inclusive = true }
+                    }
+                },
+                onStartFirstRecording = {
+                    navController.navigate(NavRoutes.MAIN) {
+                        popUpTo(NavRoutes.ONBOARDING) { inclusive = true }
+                    }
+                }
+            )
         }
         
         // Main screen - recording interface
