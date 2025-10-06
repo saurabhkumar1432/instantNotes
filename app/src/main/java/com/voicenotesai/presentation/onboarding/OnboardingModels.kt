@@ -37,37 +37,37 @@ object OnboardingConfig {
     val pages = listOf(
         OnboardingPage(
             step = OnboardingStep.Welcome,
-            title = "Welcome to Instant Notes! 🎉",
-            subtitle = "Turn your thoughts into AI-powered notes instantly",
-            description = "Drop a voice memo, get structured bullet points and summaries. No typing, no stress—just pure productivity vibes.",
-            primaryButtonText = "Let's Get Started",
+            title = "Welcome to Instant Notes",
+            subtitle = "Capture clear notes from any conversation",
+            description = "Record once and receive structured summaries, action items, and highlights in seconds. Instant Notes keeps you focused on the discussion, not on typing.",
+            primaryButtonText = "Get Started",
             secondaryButtonText = null,
             showProgress = false
         ),
         OnboardingPage(
             step = OnboardingStep.PermissionEducation,
-            title = "Let's Set Up Voice Recording 🎤",
-            subtitle = "We need microphone access to capture your brilliant ideas",
-            description = "Your audio stays on your device and gets converted to text locally. Only the transcribed text reaches your AI provider—never the raw audio.",
+            title = "Enable Voice Capture",
+            subtitle = "Microphone access keeps every idea within reach",
+            description = "Audio stays on your device while we transcribe locally. Only the generated text is sent to your connected AI provider—never the original recording.",
             icon = Icons.Default.Warning,
-            primaryButtonText = "Grant Microphone Access",
-            secondaryButtonText = "Skip for Now"
+            primaryButtonText = "Allow Microphone Access",
+            secondaryButtonText = "Not Now"
         ),
         OnboardingPage(
             step = OnboardingStep.AIProviderSetup,
-            title = "Choose Your AI Brain 🧠",
-            subtitle = "Connect your preferred AI service for note generation",
-            description = "Pick from OpenAI (GPT), Anthropic (Claude), or Google AI (Gemini). You'll need an API key from your chosen provider.",
+            title = "Connect Your AI Provider",
+            subtitle = "Choose the model that matches your workflow",
+            description = "Instant Notes supports OpenAI (GPT), Anthropic (Claude), and Google AI (Gemini). Add your API key to unlock high-quality, structured results.",
             icon = Icons.Default.Settings,
-            primaryButtonText = "Set Up AI Provider",
-            secondaryButtonText = "I'll Do This Later"
+            primaryButtonText = "Configure Provider",
+            secondaryButtonText = "I’ll Do This Later"
         ),
         OnboardingPage(
             step = OnboardingStep.FirstRecording,
-            title = "Ready to Drop Your First Note? 🚀",
-            subtitle = "Let's test everything with a quick recording",
-            description = "Try recording a short voice memo about anything—your weekend plans, a project idea, or just say hello. Watch the AI magic happen!",
-            primaryButtonText = "Record My First Note",
+            title = "Try Your First Recording",
+            subtitle = "Run a quick capture to confirm everything is ready",
+            description = "Record a short update—project notes, next steps, or even a reminder. We will format it into clean bullet points and summaries instantly.",
+            primaryButtonText = "Record a Sample",
             secondaryButtonText = "Skip Demo"
         )
     )

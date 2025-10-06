@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
@@ -19,16 +20,12 @@ import androidx.compose.ui.unit.dp
  * Gen-Z glassmorphism 2.0 - bolder borders, enhanced blur vibes
  */
 fun Modifier.glassLayer(shape: Shape = RoundedCornerShape(24.dp)): Modifier = composed {
+    val surfaceColor = MaterialTheme.colorScheme.surfaceColorAtElevation(6.dp)
     clip(shape)
-        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.85f))
+        .background(surfaceColor)
         .border(
-            width = 2.dp,
-            brush = Brush.linearGradient(
-                colors = listOf(
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.4f),
-                    MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f)
-                )
-            ),
+            width = 1.dp,
+            color = MaterialTheme.colorScheme.outlineVariant,
             shape = shape
         )
 }
@@ -53,13 +50,12 @@ fun Modifier.brutalistShadow(
 fun NeonBackdrop(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
     val gradient = Brush.verticalGradient(
         colors = listOf(
-            MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-            MaterialTheme.colorScheme.background,
-            MaterialTheme.colorScheme.secondary.copy(alpha = 0.08f),
-            MaterialTheme.colorScheme.tertiary.copy(alpha = 0.06f)
+            MaterialTheme.colorScheme.surface,
+            MaterialTheme.colorScheme.surfaceColorAtElevation(4.dp),
+            MaterialTheme.colorScheme.background
         ),
         startY = 0f,
-        endY = 2000f
+        endY = 1400f
     )
 
     Box(

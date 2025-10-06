@@ -2,7 +2,6 @@ package com.voicenotesai.presentation.notes
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,15 +15,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalIconButton
@@ -41,6 +39,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -50,9 +49,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.semantics.contentDescription
@@ -66,10 +63,6 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.voicenotesai.data.local.entity.Note
 import com.voicenotesai.domain.model.toUserMessage
-import com.voicenotesai.presentation.animations.AnimatedListItem
-import com.voicenotesai.presentation.animations.bouncyClickable
-import com.voicenotesai.presentation.animations.SlideInContent
-import com.voicenotesai.presentation.animations.SlideDirection
 // import com.voicenotesai.presentation.notes.components.BatchDeleteDialog
 // import com.voicenotesai.presentation.notes.components.EmptySearchState
 // import com.voicenotesai.presentation.notes.components.NotesExportDialog
@@ -79,7 +72,6 @@ import com.voicenotesai.presentation.notes.components.NotesSearchBar
 // import com.voicenotesai.presentation.notes.components.NotesSortDropdown
 import com.voicenotesai.presentation.theme.ExtendedTypography
 import com.voicenotesai.presentation.theme.Spacing
-import com.voicenotesai.presentation.theme.glassLayer
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -107,11 +99,11 @@ fun NotesScreen(
                 title = {
                     Column(verticalArrangement = Arrangement.spacedBy(Spacing.extraSmall)) {
                         Text(
-                            text = "Saved drops",
+                            text = "Notes",
                             style = MaterialTheme.typography.titleLarge
                         )
                         Text(
-                            text = "Swipe through every riff the AI turned into notes.",
+                            text = "Review and manage every transcript you've captured.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.65f)
                         )
@@ -222,9 +214,11 @@ fun NotesScreen(
                 },
 				onDismiss = { noteToDelete = null }
 			)
-		}
-	}
-}@Composable
+        }
+        }
+    }
+
+    @Composable
 private fun NotesList(
     notes: List<Note>,
     onNoteClick: (Long) -> Unit,
@@ -240,44 +234,29 @@ private fun NotesList(
         ),
         verticalArrangement = Arrangement.spacedBy(Spacing.medium)
     ) {
-		item {
-			Box(
-				modifier = Modifier
-					.fillMaxWidth()
-					.border(
-						width = 3.dp,
-						brush = Brush.linearGradient(
-							colors = listOf(
-								MaterialTheme.colorScheme.primary,
-								MaterialTheme.colorScheme.tertiary
-							)
-						),
-						shape = RoundedCornerShape(24.dp)
-					)
-					.background(
-						color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f),
-						shape = RoundedCornerShape(24.dp)
-					)
-					.padding(Spacing.large)
-			) {
-				Column(
-					verticalArrangement = Arrangement.spacedBy(Spacing.small)
-				) {
-					Text(
-						text = "✨ Your masterpieces",
-						style = MaterialTheme.typography.headlineSmall,
-						fontWeight = FontWeight.ExtraBold,
-						color = MaterialTheme.colorScheme.onPrimaryContainer
-					)
-					Text(
-						text = "Every note is AI-polished and ready to reference whenever inspiration strikes again 🚀",
-						style = MaterialTheme.typography.bodyLarge,
-						color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
-						fontWeight = FontWeight.Medium
-					)
-				}
-			}
-		}
+        item {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                tonalElevation = 4.dp
+            ) {
+                Column(
+                    modifier = Modifier.padding(Spacing.large),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.small)
+                ) {
+                    Text(
+                        text = "Everything in one place",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        text = "Use search to jump back to a conversation or open a note to review the full transcript.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
 		
 		items(notes, key = { it.id }) { note ->
             NoteCard(
@@ -289,6 +268,7 @@ private fun NotesList(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun NoteCard(
     note: Note,
@@ -298,91 +278,72 @@ private fun NoteCard(
     val haptic = LocalHapticFeedback.current
     val timestamp = SimpleDateFormat("MMM d, h:mm a", Locale.getDefault()).format(Date(note.timestamp))
     val preview = note.content.take(150).replace("\n", " ")
-    
-    Column(
+    Card(
+        onClick = {
+            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+            onClick()
+        },
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         modifier = Modifier
             .fillMaxWidth()
-            .border(
-                width = 3.dp,
-                brush = Brush.linearGradient(
-                    colors = listOf(
-                        MaterialTheme.colorScheme.secondary,
-                        MaterialTheme.colorScheme.primary
-                    )
-                ),
-                shape = RoundedCornerShape(24.dp)
-            )
-            .background(
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
-                shape = RoundedCornerShape(24.dp)
-            )
-            .bouncyClickable {
-                onClick()
-            }
             .semantics {
-                contentDescription = "Note from $timestamp. Content: $preview. Double tap to open."
+                contentDescription = "Note from $timestamp. Preview: $preview"
             }
-            .padding(Spacing.large),
-        verticalArrangement = Arrangement.spacedBy(Spacing.medium)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier.padding(Spacing.large),
+            verticalArrangement = Arrangement.spacedBy(Spacing.medium)
         ) {
-			Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.small)) {
-				Box(
-					modifier = Modifier
-						.background(
-							brush = Brush.linearGradient(
-								listOf(
-									MaterialTheme.colorScheme.primary,
-									MaterialTheme.colorScheme.secondary
-								)
-							),
-							shape = RoundedCornerShape(12.dp)
-						)
-						.padding(horizontal = 14.dp, vertical = 8.dp)
-				) {
-					Text(
-						text = formatTimestamp(note.timestamp),
-						style = MaterialTheme.typography.labelLarge,
-						color = Color.White,
-						fontWeight = FontWeight.Bold
-					)
-				}
-			}
-			
-			FilledTonalIconButton(
-                onClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    onDeleteClick()
-                },
-                modifier = Modifier
-                    .size(42.dp)
-                    .semantics {
-                        contentDescription = "Delete note from $timestamp"
-                    },
-                colors = IconButtonDefaults.filledTonalIconButtonColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer,
-                    contentColor = MaterialTheme.colorScheme.error
-                )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-        }
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                ) {
+                    Text(
+                        text = formatTimestamp(note.timestamp),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
+                    )
+                }
 
-        Text(
-            text = note.content,
-            style = ExtendedTypography.noteContent,
-            maxLines = 5,
-            overflow = TextOverflow.Ellipsis,
-            color = MaterialTheme.colorScheme.onSurface
-        )
+                FilledTonalIconButton(
+                    onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onDeleteClick()
+                    },
+                    modifier = Modifier
+                        .size(42.dp)
+                        .semantics {
+                            contentDescription = "Delete note from $timestamp"
+                        },
+                    colors = IconButtonDefaults.filledTonalIconButtonColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+
+            Text(
+                text = note.content,
+                style = ExtendedTypography.noteContent,
+                maxLines = 5,
+                overflow = TextOverflow.Ellipsis,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
     }
 }
 
@@ -432,31 +393,24 @@ private fun EmptySearchState(
 
 @Composable
 private fun EmptyState(modifier: Modifier = Modifier) {
-    Box(
+    Surface(
         modifier = modifier
-            .padding(horizontal = Spacing.extraLarge)
-            .border(
-                width = 3.dp,
-                color = MaterialTheme.colorScheme.outline,
-                shape = RoundedCornerShape(28.dp)
-            )
-            .background(
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                shape = RoundedCornerShape(28.dp)
-            )
-            .padding(Spacing.huge)
+            .padding(horizontal = Spacing.extraLarge),
+        shape = RoundedCornerShape(28.dp),
+        tonalElevation = 4.dp
     ) {
         Column(
+            modifier = Modifier.padding(Spacing.huge),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(Spacing.medium)
         ) {
             Text(
-                text = "💀 Nothing here yet",
+                text = "No notes yet",
                 style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.ExtraBold
+                fontWeight = FontWeight.Medium
             )
             Text(
-                text = "Hit that record button on the home screen to capture your first genius idea 💡",
+                text = "Record from the home screen to create your first AI-generated summary.",
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
@@ -473,14 +427,14 @@ private fun DeleteConfirmationDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Delete note") },
-        text = { Text("This note will vanish forever. Continue?") },
+        title = { Text("Delete note permanently?") },
+        text = { Text("This will permanently remove the note. This action cannot be undone.") },
         confirmButton = {
             TextButton(
                 onClick = onConfirm,
                 colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
             ) {
-                Text("Delete")
+                Text("Delete note")
             }
         },
         dismissButton = {

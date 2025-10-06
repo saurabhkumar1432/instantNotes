@@ -31,11 +31,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -51,7 +52,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -200,10 +200,10 @@ fun EnhancedRecordButton(
                 )
         ) {
             // Animated ripple effects
-            repeat(3) { index ->
+            repeat(2) { index ->
                 Box(
                     modifier = Modifier
-                        .size((160 + index * 20).dp)
+                        .size((150 + index * 18).dp)
                         .background(
                             brush = Brush.radialGradient(
                                 colors = listOf(
@@ -271,26 +271,28 @@ fun EnhancedRecordButton(
                     label = "button-icon-transition"
                 ) { state ->
                     when (state) {
-                        RecordingButtonState.Idle -> Box(
-                            modifier = Modifier
-                                .size(48.dp)
-                                .background(iconColor, CircleShape)
+                        RecordingButtonState.Idle -> Icon(
+                            imageVector = Icons.Filled.Mic,
+                            contentDescription = null,
+                            tint = iconColor,
+                            modifier = Modifier.size(42.dp)
                         )
                         RecordingButtonState.Recording -> Icon(
-                            imageVector = Icons.Default.Close,
+                            imageVector = Icons.Filled.Stop,
                             contentDescription = null,
                             tint = iconColor,
                             modifier = Modifier.size(40.dp)
                         )
                         RecordingButtonState.Paused -> Icon(
-                            imageVector = Icons.Default.Info,
+                            imageVector = Icons.Filled.PlayArrow,
                             contentDescription = null,
                             tint = iconColor,
-                            modifier = Modifier.size(48.dp)
+                            modifier = Modifier.size(42.dp)
                         )
-                        RecordingButtonState.Processing -> LoadingSpinner(
-                            color = iconColor,
-                            size = 44.dp
+                        RecordingButtonState.Processing -> CircularProgressIndicator(
+                            modifier = Modifier.size(36.dp),
+                            strokeWidth = 3.dp,
+                            color = iconColor
                         )
                     }
                 }
@@ -322,8 +324,8 @@ fun EnhancedRecordButton(
                         
                         Text(
                             text = when (state) {
-                                RecordingButtonState.Recording -> "🎤 Recording..."
-                                RecordingButtonState.Paused -> "⏸️ Paused"
+                                RecordingButtonState.Recording -> "Recording in progress"
+                                RecordingButtonState.Paused -> "Recording paused"
                                 else -> ""
                             },
                             style = MaterialTheme.typography.bodyMedium,
@@ -335,8 +337,8 @@ fun EnhancedRecordButton(
                 else -> {
                     Text(
                         text = when (state) {
-                            RecordingButtonState.Idle -> "Tap to start recording"
-                            RecordingButtonState.Processing -> "Processing your recording..."
+                            RecordingButtonState.Idle -> "Tap to record"
+                            RecordingButtonState.Processing -> "Transcribing and structuring"
                             else -> ""
                         },
                         style = MaterialTheme.typography.bodyLarge,
@@ -349,14 +351,7 @@ fun EnhancedRecordButton(
         }
 
         // Secondary controls for recording state
-        if (recordingState == RecordingButtonState.Recording) {
-            Text(
-                text = "Recording controls will be added here",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center
-            )
-        }
+        // Additional inline controls can be introduced here as features expand.
     }
 }
 
@@ -420,36 +415,6 @@ fun EnhancedWaveformIndicator(
             )
         }
     }
-}
-
-/**
- * Loading spinner for processing state
- */
-@Composable
-private fun LoadingSpinner(
-    color: Color,
-    size: androidx.compose.ui.unit.Dp,
-    modifier: Modifier = Modifier
-) {
-    val infiniteTransition = rememberInfiniteTransition(label = "loading-spinner")
-    
-    val rotation by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1000, easing = LinearEasing)
-        ),
-        label = "spinner-rotation"
-    )
-
-    Icon(
-        imageVector = Icons.Default.Refresh,
-        contentDescription = null,
-        tint = color,
-        modifier = modifier
-            .size(size)
-            .rotate(rotation)
-    )
 }
 
 /**
@@ -565,9 +530,9 @@ enum class RetryType(
     val actionDescription: String,
     val icon: ImageVector
 ) {
-    RecordAgain("Try Recording Again", "recording", Icons.Default.Refresh),
-    CheckMicrophone("Check Microphone", "microphone check", Icons.Default.Warning),
-    CheckConnection("Check Connection", "connection check", Icons.Default.Warning)
+    RecordAgain("Try Recording Again", "recording", Icons.Filled.Refresh),
+    CheckMicrophone("Check Microphone", "microphone check", Icons.Filled.Warning),
+    CheckConnection("Check Connection", "connection check", Icons.Filled.Warning)
 }
 
 // Helper functions

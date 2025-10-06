@@ -23,37 +23,37 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.TaskAlt
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -61,6 +61,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -72,8 +73,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -94,11 +95,8 @@ import com.voicenotesai.domain.model.canRetry
 import com.voicenotesai.domain.model.getActionGuidance
 import com.voicenotesai.domain.model.shouldNavigateToSettings
 import com.voicenotesai.domain.model.toUserMessage
-import com.voicenotesai.presentation.animations.AnimationConfig
 import com.voicenotesai.presentation.animations.SlideInContent
 import com.voicenotesai.presentation.animations.SlideDirection
-import com.voicenotesai.presentation.animations.bouncyClickable
-import com.voicenotesai.presentation.animations.pulseAnimation
 import com.voicenotesai.presentation.components.EnhancedErrorCard
 import com.voicenotesai.presentation.components.EnhancedRecordButton
 import com.voicenotesai.presentation.components.EnhancedWaveformIndicator
@@ -109,7 +107,6 @@ import com.voicenotesai.presentation.components.RetryType
 import com.voicenotesai.presentation.components.SmartRetryButton
 import com.voicenotesai.presentation.theme.ExtendedTypography
 import com.voicenotesai.presentation.theme.Spacing
-import com.voicenotesai.presentation.theme.glassLayer
 
 @OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -159,7 +156,7 @@ fun MainScreen(
 							fontWeight = FontWeight.SemiBold
 						)
 						Text(
-							text = "Drop thoughts. Get structured notes.",
+							text = "Voice-first capture for structured, shareable notes.",
 							style = MaterialTheme.typography.bodySmall,
 							color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.65f)
 						)
@@ -338,8 +335,8 @@ fun MainScreen(
 			title = { Text("Microphone Permission Needed") },
 			text = {
 				Text(
-					"We only use your mic while you record. The raw audio never leaves your device; only the " +
-						"transcribed text reaches your AI provider."
+					"Instant Notes only requests access while you record. Raw audio stays on this device; " +
+						"only the transcription is shared with your configured AI provider."
 				)
 			},
 			confirmButton = {
@@ -349,7 +346,7 @@ fun MainScreen(
 						microphonePermissionState.launchPermissionRequest()
 					}
 				) {
-					Text("Grant Access")
+					Text("Allow access")
 				}
 			},
 			dismissButton = {
@@ -366,7 +363,7 @@ fun MainScreen(
 			title = { Text("Turn On Microphone") },
 			text = {
 				Text(
-					"Recording is disabled because the microphone permission is off. You can enable it from the app settings."
+					"Recording is unavailable because microphone access is disabled. Enable the permission from Settings to continue."
 				)
 			},
 			confirmButton = {
@@ -379,7 +376,7 @@ fun MainScreen(
 						context.startActivity(intent)
 					}
 				) {
-					Text("Open Settings")
+					Text("Open settings")
 				}
 			},
 			dismissButton = {
@@ -397,81 +394,70 @@ private fun IdleContent(
 	modifier: Modifier = Modifier
 ) {
 	Column(
-		modifier = Modifier
+		modifier = modifier
 			.fillMaxSize()
 			.verticalScroll(rememberScrollState()),
-		horizontalAlignment = Alignment.CenterHorizontally
+		horizontalAlignment = Alignment.CenterHorizontally,
+		verticalArrangement = Arrangement.Top
 	) {
 		Spacer(modifier = Modifier.height(Spacing.extraLarge))
 
-		Column(
+		Text(
+			text = "Capture ideas instantly",
+			style = MaterialTheme.typography.headlineLarge,
+			fontWeight = FontWeight.SemiBold,
+			textAlign = TextAlign.Center
+		)
+
+		Spacer(modifier = Modifier.height(Spacing.small))
+
+		Text(
+			text = "Press record and let Instant Notes transform the conversation into polished summaries, decisions, and action items.",
+			style = MaterialTheme.typography.bodyLarge,
+			textAlign = TextAlign.Center,
+			color = MaterialTheme.colorScheme.onSurfaceVariant
+		)
+
+		Spacer(modifier = Modifier.height(Spacing.large))
+
+		Surface(
 			modifier = Modifier.fillMaxWidth(),
-			horizontalAlignment = Alignment.CenterHorizontally,
-			verticalArrangement = Arrangement.spacedBy(Spacing.medium)
-		) {
-			Text(
-				text = "✨ Drop that thought ✨",
-				style = MaterialTheme.typography.headlineLarge,
-				fontWeight = FontWeight.ExtraBold,
-				textAlign = TextAlign.Center
-			)
-			Text(
-				text = "Hit record, spill your mind, watch AI work its magic 🎯",
-				style = MaterialTheme.typography.bodyLarge,
-				textAlign = TextAlign.Center,
-				color = MaterialTheme.colorScheme.onSurfaceVariant,
-				fontWeight = FontWeight.Medium
-			)
-		}
-
-		Spacer(modifier = Modifier.height(Spacing.extraLarge))
-
-		Box(
-			modifier = Modifier
-				.fillMaxWidth()
-				.border(
-					width = 3.dp,
-					brush = Brush.linearGradient(
-						colors = listOf(
-							MaterialTheme.colorScheme.primary,
-							MaterialTheme.colorScheme.secondary,
-							MaterialTheme.colorScheme.tertiary
-						)
-					),
-					shape = RoundedCornerShape(24.dp)
-				)
-				.background(
-					color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
-					shape = RoundedCornerShape(24.dp)
-				)
-				.padding(horizontal = Spacing.large, vertical = Spacing.large)
+			shape = RoundedCornerShape(28.dp),
+			tonalElevation = 6.dp
 		) {
 			Column(
-				verticalArrangement = Arrangement.spacedBy(Spacing.medium),
-				horizontalAlignment = Alignment.Start
+				modifier = Modifier.padding(Spacing.large),
+				verticalArrangement = Arrangement.spacedBy(Spacing.medium)
 			) {
-				Text(
-					text = "🚀 What you get:",
-					style = MaterialTheme.typography.titleMedium,
-					fontWeight = FontWeight.Bold,
-					color = MaterialTheme.colorScheme.primary
+				FeatureRow(
+					icon = Icons.Filled.Description,
+					title = "Structured output",
+					subtitle = "Concise summaries with highlights and follow-ups ready to share."
 				)
-				Text(
-					text = "✓ Instant AI structuring (bullets + summary)",
-					style = MaterialTheme.typography.bodyLarge,
-					fontWeight = FontWeight.Medium
+				FeatureRow(
+					icon = Icons.Filled.Schedule,
+					title = "Meeting-ready notes",
+					subtitle = "Timestamped details arrive the moment you stop recording."
 				)
-				Text(
-					text = "✓ Your choice of AI brain (OpenAI, Claude, Gemini)",
-					style = MaterialTheme.typography.bodyLarge,
-					fontWeight = FontWeight.Medium
-				)
-				Text(
-					text = "✓ Audio never leaves your device 🔒",
-					style = MaterialTheme.typography.bodyLarge,
-					fontWeight = FontWeight.Medium
+				FeatureRow(
+					icon = Icons.Filled.Lock,
+					title = "Privacy built in",
+					subtitle = "Audio stays on device—only approved text reaches your AI provider."
 				)
 			}
+		}
+
+		Spacer(modifier = Modifier.height(Spacing.large))
+
+		Row(
+			modifier = Modifier
+				.fillMaxWidth()
+				.horizontalScroll(rememberScrollState()),
+			horizontalArrangement = Arrangement.spacedBy(Spacing.small)
+		) {
+			InsightChip(icon = Icons.Filled.Bolt, label = "Realtime transcription")
+			InsightChip(icon = Icons.Filled.TaskAlt, label = "Action item detection")
+			InsightChip(icon = Icons.Filled.Lock, label = "Enterprise security")
 		}
 
 		Spacer(modifier = Modifier.height(Spacing.huge))
@@ -486,10 +472,10 @@ private fun IdleContent(
 		Spacer(modifier = Modifier.height(Spacing.large))
 
 		Text(
-			text = "No typing. No fuss. Just vibes → notes 💭",
-			style = MaterialTheme.typography.bodyLarge,
+			text = "Review, copy, and share the transcript immediately after recording completes.",
+			style = MaterialTheme.typography.bodyMedium,
 			color = MaterialTheme.colorScheme.onSurfaceVariant,
-			fontWeight = FontWeight.Medium
+			textAlign = TextAlign.Center
 		)
 
 		Spacer(modifier = Modifier.height(Spacing.extraLarge))
@@ -510,20 +496,22 @@ private fun PermissionRequiredContent(
 	) {
 		Spacer(modifier = Modifier.height(Spacing.extraLarge))
 
-		Box(
-			modifier = Modifier
-				.fillMaxWidth()
-				.glassLayer(RoundedCornerShape(32.dp))
-				.padding(Spacing.large)
+		Surface(
+			modifier = Modifier.fillMaxWidth(),
+			shape = RoundedCornerShape(28.dp),
+			tonalElevation = 4.dp
 		) {
-			Column(verticalArrangement = Arrangement.spacedBy(Spacing.medium)) {
+			Column(
+				modifier = Modifier.padding(Spacing.large),
+				verticalArrangement = Arrangement.spacedBy(Spacing.medium)
+			) {
 				Text(
-					text = "Microphone permission required",
+					text = "Microphone access required",
 					style = MaterialTheme.typography.headlineSmall,
 					fontWeight = FontWeight.SemiBold
 				)
 				Text(
-					text = "We only capture audio while you're recording and instantly turn it into notes.",
+					text = "Instant Notes only listens while you record and stores audio locally. Enable the microphone to capture conversations hands-free.",
 					style = MaterialTheme.typography.bodyMedium,
 					color = MaterialTheme.colorScheme.onSurfaceVariant
 				)
@@ -534,14 +522,14 @@ private fun PermissionRequiredContent(
 			onClick = onRequestPermission,
 			modifier = Modifier.fillMaxWidth()
 		) {
-			Text("Grant Microphone Access")
+			Text("Allow microphone access")
 		}
 
 		OutlinedButton(
 			onClick = onOpenSettings,
 			modifier = Modifier.fillMaxWidth()
 		) {
-			Text("Open App Settings")
+			Text("Open app settings")
 		}
 
 		Spacer(modifier = Modifier.height(Spacing.extraLarge))
@@ -577,7 +565,7 @@ private fun RecordingContent(
 			verticalArrangement = Arrangement.spacedBy(Spacing.small)
 		) {
 			Text(
-				text = "🎤 Listening...",
+				text = "Recording in progress",
 				style = MaterialTheme.typography.headlineLarge,
 				fontWeight = FontWeight.ExtraBold
 			)
@@ -588,37 +576,25 @@ private fun RecordingContent(
 			)
 		}
 
-		// Enhanced waveform visualization
-		Box(
+		Surface(
 			modifier = Modifier
 				.fillMaxWidth()
-				.height(140.dp)
-				.border(
-					width = 3.dp,
-					brush = Brush.horizontalGradient(
-						colors = listOf(
-							MaterialTheme.colorScheme.primary,
-							MaterialTheme.colorScheme.secondary
-						)
-					),
-					shape = RoundedCornerShape(28.dp)
-				)
-				.background(
-					color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
-					shape = RoundedCornerShape(28.dp)
-				)
-				.padding(Spacing.large)
+				.height(140.dp),
+			shape = RoundedCornerShape(28.dp),
+			tonalElevation = 6.dp
 		) {
-			EnhancedWaveformIndicator(
-				isActive = true,
-				intensity = when (recordingQuality) {
-					RecordingQuality.Poor -> 0.3f
-					RecordingQuality.Fair -> 0.6f
-					RecordingQuality.Good -> 0.8f
-					RecordingQuality.Excellent -> 1f
-				},
-				modifier = Modifier.fillMaxWidth()
-			)
+			Box(modifier = Modifier.padding(Spacing.large)) {
+				EnhancedWaveformIndicator(
+					isActive = true,
+					intensity = when (recordingQuality) {
+						RecordingQuality.Poor -> 0.3f
+						RecordingQuality.Fair -> 0.6f
+						RecordingQuality.Good -> 0.8f
+						RecordingQuality.Excellent -> 1f
+					},
+					modifier = Modifier.fillMaxWidth()
+				)
+			}
 		}
 
 		// Enhanced record button with stop functionality
@@ -630,7 +606,7 @@ private fun RecordingContent(
 		)
 
 		Text(
-			text = "Speak clearly for best results ✨\nTap stop when you're done",
+			text = "Speak naturally. Pause or tap stop whenever you want to review your notes.",
 			style = MaterialTheme.typography.bodyLarge,
 			color = MaterialTheme.colorScheme.onSurfaceVariant,
 			fontWeight = FontWeight.Medium,
@@ -664,13 +640,13 @@ private fun ProcessingContent(
 
 		Spacer(modifier = Modifier.height(Spacing.large))
 
-		Box(
-			modifier = Modifier
-				.fillMaxWidth()
-				.glassLayer(RoundedCornerShape(28.dp))
-				.padding(Spacing.large)
+		Surface(
+			modifier = Modifier.fillMaxWidth(),
+			shape = RoundedCornerShape(28.dp),
+			tonalElevation = 4.dp
 		) {
 			Column(
+				modifier = Modifier.padding(Spacing.large),
 				horizontalAlignment = Alignment.CenterHorizontally,
 				verticalArrangement = Arrangement.spacedBy(Spacing.medium)
 			) {
@@ -680,9 +656,9 @@ private fun ProcessingContent(
 					textAlign = TextAlign.Center,
 					fontWeight = FontWeight.Medium
 				)
-				
+
 				Text(
-					text = "🧠 AI is working its magic...",
+					text = "We’re transcribing and organizing your notes.",
 					style = MaterialTheme.typography.bodyMedium,
 					color = MaterialTheme.colorScheme.onSurfaceVariant,
 					textAlign = TextAlign.Center
@@ -714,31 +690,19 @@ private fun SuccessContent(
 		Spacer(modifier = Modifier.height(Spacing.small))
 
 		Text(
-			text = "🔥 Your AI-powered notes",
+			text = "Notes ready to share",
 			style = MaterialTheme.typography.headlineLarge,
-			fontWeight = FontWeight.ExtraBold
+			fontWeight = FontWeight.SemiBold
 		)
 
 		val noteScrollState = rememberScrollState()
 
-		Box(
+		Surface(
 			modifier = Modifier
 				.fillMaxWidth()
-				.heightIn(min = 200.dp, max = 420.dp)
-				.border(
-					width = 3.dp,
-					brush = Brush.linearGradient(
-						colors = listOf(
-							MaterialTheme.colorScheme.secondary,
-							MaterialTheme.colorScheme.primary
-						)
-					),
-					shape = RoundedCornerShape(24.dp)
-				)
-				.background(
-					color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
-					shape = RoundedCornerShape(24.dp)
-				)
+				.heightIn(min = 200.dp, max = 420.dp),
+			shape = RoundedCornerShape(24.dp),
+			tonalElevation = 6.dp
 		) {
 			Text(
 				text = notes,
@@ -752,7 +716,7 @@ private fun SuccessContent(
 			)
 		}
 
-		Button(
+		FilledTonalButton(
 			onClick = {
 				haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
 				onCopy()
@@ -761,19 +725,15 @@ private fun SuccessContent(
 				.fillMaxWidth()
 				.semantics {
 					contentDescription = "Copy generated notes to clipboard"
-				},
-			colors = ButtonDefaults.buttonColors(
-				containerColor = MaterialTheme.colorScheme.secondaryContainer,
-				contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-			)
+				}
 		) {
 			Text(
-				"📋 Copy to clipboard", 
+				"Copy to clipboard",
 				style = ExtendedTypography.buttonText
 			)
 		}
 
-		Button(
+		FilledTonalButton(
 			onClick = {
 				haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
 				onShare()
@@ -782,14 +742,10 @@ private fun SuccessContent(
 				.fillMaxWidth()
 				.semantics {
 					contentDescription = "Share generated notes with other apps"
-				},
-			colors = ButtonDefaults.buttonColors(
-				containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-				contentColor = MaterialTheme.colorScheme.onTertiaryContainer
-			)
+				}
 		) {
 			Text(
-				"📤 Share with friends", 
+				"Share",
 				style = ExtendedTypography.buttonText
 			)
 		}
@@ -806,7 +762,7 @@ private fun SuccessContent(
 				}
 		) {
 			Text(
-				"🎙️ Record another banger", 
+				"Start new recording",
 				style = ExtendedTypography.buttonText
 			)
 		}
@@ -815,6 +771,77 @@ private fun SuccessContent(
 	}
 	}
 }
+
+	@Composable
+	private fun FeatureRow(
+		icon: ImageVector,
+		title: String,
+		subtitle: String
+	) {
+		Row(
+			modifier = Modifier.fillMaxWidth(),
+			horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
+			verticalAlignment = Alignment.CenterVertically
+		) {
+			Surface(
+				shape = CircleShape,
+				color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+			) {
+				Icon(
+					imageVector = icon,
+					contentDescription = null,
+					tint = MaterialTheme.colorScheme.primary,
+					modifier = Modifier
+						.padding(Spacing.small)
+						.size(28.dp)
+				)
+			}
+
+			Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+				Text(
+					text = title,
+					style = MaterialTheme.typography.titleMedium,
+					fontWeight = FontWeight.SemiBold
+				)
+				Text(
+					text = subtitle,
+					style = MaterialTheme.typography.bodyMedium,
+					color = MaterialTheme.colorScheme.onSurfaceVariant
+				)
+			}
+		}
+	}
+
+	@Composable
+	private fun InsightChip(
+		icon: ImageVector,
+		label: String,
+		modifier: Modifier = Modifier
+	) {
+		Surface(
+			modifier = modifier,
+			shape = RoundedCornerShape(50),
+			color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
+		) {
+			Row(
+				modifier = Modifier.padding(horizontal = Spacing.medium, vertical = Spacing.small),
+				horizontalArrangement = Arrangement.spacedBy(Spacing.small),
+				verticalAlignment = Alignment.CenterVertically
+			) {
+				Icon(
+					imageVector = icon,
+					contentDescription = null,
+					tint = MaterialTheme.colorScheme.onSecondaryContainer,
+					modifier = Modifier.size(18.dp)
+				)
+				Text(
+					text = label,
+					style = MaterialTheme.typography.labelLarge,
+					color = MaterialTheme.colorScheme.onSecondaryContainer
+				)
+			}
+		}
+	}
 
 private fun formatDuration(milliseconds: Long): String {
 	val totalSeconds = milliseconds / 1000

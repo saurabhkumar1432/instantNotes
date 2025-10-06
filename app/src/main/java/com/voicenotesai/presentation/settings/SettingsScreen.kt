@@ -1,5 +1,7 @@
 package com.voicenotesai.presentation.settings
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -11,8 +13,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -43,6 +43,7 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -53,18 +54,15 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.voicenotesai.data.model.AIProvider
 import com.voicenotesai.domain.model.toUserMessage
 import com.voicenotesai.presentation.theme.Spacing
-import com.voicenotesai.presentation.theme.glassLayer
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -102,11 +100,11 @@ fun SettingsScreen(
 				title = {
 					Column(verticalArrangement = Arrangement.spacedBy(Spacing.extraSmall)) {
 						Text(
-							text = "Tweak the AI brain",
+							text = "AI provider settings",
 							style = MaterialTheme.typography.titleLarge
 						)
 						Text(
-							text = "Plug in credentials and models to keep things humming.",
+							text = "Connect your AI provider so Instant Notes can generate structured summaries.",
 							style = MaterialTheme.typography.bodySmall,
 							color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.65f)
 						)
@@ -137,19 +135,10 @@ fun SettingsScreen(
 				.padding(horizontal = Spacing.large, vertical = Spacing.extraLarge),
 			verticalArrangement = Arrangement.spacedBy(Spacing.large)
 		) {
-			GlassSection {
-				Text(
-					text = "🔧 Setup",
-					style = MaterialTheme.typography.titleMedium,
-					fontWeight = FontWeight.ExtraBold,
-					color = MaterialTheme.colorScheme.primary
-				)
-				Text(
-					text = "Provider",
-					style = MaterialTheme.typography.labelLarge,
-					color = MaterialTheme.colorScheme.onSurfaceVariant,
-					fontWeight = FontWeight.Medium
-				)
+			SettingsSection(
+				title = "Connection",
+				description = "Select your AI provider and authenticate with your API key."
+			) {
 				ExposedDropdownMenuBox(
 					expanded = expanded,
 					onExpandedChange = { expanded = !expanded }
@@ -187,7 +176,7 @@ fun SettingsScreen(
 					value = uiState.apiKey,
 					onValueChange = { viewModel.onApiKeyChanged(it) },
 					label = { Text("API key") },
-					placeholder = { Text("Enter your API key") },
+					placeholder = { Text("Paste the secret from your provider console") },
 					visualTransformation = if (showApiKey) VisualTransformation.None else PasswordVisualTransformation(),
 					trailingIcon = {
 						TextButton(onClick = { showApiKey = !showApiKey }) {
@@ -204,31 +193,18 @@ fun SettingsScreen(
 					value = uiState.model,
 					onValueChange = { viewModel.onModelChanged(it) },
 					label = { Text("Model name") },
-					placeholder = { Text("e.g., gpt-4, claude-3-opus-20240229") },
+					placeholder = { Text("Example: gpt-4o, claude-3-opus-20240229") },
 					modifier = Modifier.fillMaxWidth(),
 					singleLine = true,
 					colors = TextFieldDefaults.outlinedTextFieldColors(containerColor = Color.Transparent)
 				)
 			}
 
-			GlassSection {
-				Text(
-					text = "💡 Model examples",
-					style = MaterialTheme.typography.titleMedium,
-					fontWeight = FontWeight.ExtraBold,
-					color = MaterialTheme.colorScheme.secondary
-				)
-				Text(
-					text = when (uiState.provider) {
-						AIProvider.OPENAI -> "• gpt-4\n• gpt-3.5-turbo\n• gpt-4-turbo-preview"
-						AIProvider.ANTHROPIC -> "• claude-3-opus-20240229\n• claude-3-sonnet-20240229\n• claude-3-haiku-20240307"
-						AIProvider.GOOGLE_AI -> "• gemini-pro\n• gemini-1.5-pro\n• gemini-1.5-flash"
-					},
-					style = MaterialTheme.typography.bodyLarge,
-					color = MaterialTheme.colorScheme.onSurfaceVariant,
-					fontWeight = FontWeight.Medium,
-					lineHeight = 26.sp
-				)
+			SettingsSection(
+				title = "Model guidance",
+				description = "Use one of these production-tested model identifiers for the best transcription and summarization results."
+			) {
+				ModelRecommendations(provider = uiState.provider)
 			}
 
 			if (uiState.validationStatus != ValidationStatus.NONE) {
@@ -251,7 +227,7 @@ fun SettingsScreen(
 					)
 					Spacer(modifier = Modifier.width(Spacing.small))
 				}
-				Text("🧪 Test connection", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyLarge)
+				Text("Validate credentials", fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodyLarge)
 			}
 
 			Button(
@@ -268,30 +244,32 @@ fun SettingsScreen(
 					)
 					Spacer(modifier = Modifier.width(Spacing.small))
 				}
-				Text("💾 Save settings", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyLarge)
+				Text("Save configuration", fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodyLarge)
 			}
 
-			GlassSection {
+			SettingsSection(
+				title = "Why we validate",
+				description = "We run a quick request before recording so you never lose a note to invalid credentials."
+			) {
 				Text(
-					text = "🔒 Why we test first",
-					style = MaterialTheme.typography.titleMedium,
-					fontWeight = FontWeight.ExtraBold,
-					color = MaterialTheme.colorScheme.tertiary
-				)
-				Text(
-					text = "We ping your provider to make sure everything's valid before you start vibing with voice notes ✨",
-					style = MaterialTheme.typography.bodyLarge,
-					color = MaterialTheme.colorScheme.onSurfaceVariant,
-					fontWeight = FontWeight.Medium
+					text = "The check confirms your API key and model are accessible. You can re-run validation any time after updating your provider settings.",
+					style = MaterialTheme.typography.bodyMedium,
+					color = MaterialTheme.colorScheme.onSurfaceVariant
 				)
 			}
 
 			if (uiState.isSaved) {
-				GlassSection {
+				Surface(
+					modifier = Modifier.fillMaxWidth(),
+					shape = RoundedCornerShape(20.dp),
+					color = MaterialTheme.colorScheme.primaryContainer,
+					tonalElevation = 0.dp
+				) {
 					Text(
-						text = "Settings saved successfully!",
+						text = "Settings saved successfully.",
 						style = MaterialTheme.typography.bodyMedium,
-						color = MaterialTheme.colorScheme.primary
+						color = MaterialTheme.colorScheme.onPrimaryContainer,
+						modifier = Modifier.padding(Spacing.medium)
 					)
 				}
 			}
@@ -300,28 +278,55 @@ fun SettingsScreen(
 }
 
 @Composable
-private fun GlassSection(content: @Composable ColumnScope.() -> Unit) {
-	Column(
-		modifier = Modifier
-			.fillMaxWidth()
-			.border(
-				width = 3.dp,
-				brush = Brush.linearGradient(
-					colors = listOf(
-						MaterialTheme.colorScheme.primary,
-						MaterialTheme.colorScheme.secondary
+private fun SettingsSection(
+	title: String,
+	description: String? = null,
+	content: @Composable ColumnScope.() -> Unit
+) {
+	Surface(
+		modifier = Modifier.fillMaxWidth(),
+		shape = RoundedCornerShape(24.dp),
+		tonalElevation = 4.dp
+	) {
+		Column(
+			modifier = Modifier.padding(Spacing.large),
+			verticalArrangement = Arrangement.spacedBy(Spacing.medium),
+			content = {
+				Text(
+					text = title,
+					style = MaterialTheme.typography.titleMedium,
+					fontWeight = FontWeight.SemiBold
+				)
+				description?.let {
+					Text(
+						text = it,
+						style = MaterialTheme.typography.bodyMedium,
+						color = MaterialTheme.colorScheme.onSurfaceVariant
 					)
-				),
-				shape = RoundedCornerShape(24.dp)
+				}
+				content()
+			}
+		)
+	}
+}
+
+@Composable
+private fun ModelRecommendations(provider: AIProvider) {
+	val recommendations = when (provider) {
+		AIProvider.OPENAI -> listOf("gpt-4", "gpt-4o", "gpt-3.5-turbo")
+		AIProvider.ANTHROPIC -> listOf("claude-3-opus-20240229", "claude-3-sonnet-20240229", "claude-3-haiku-20240307")
+		AIProvider.GOOGLE_AI -> listOf("gemini-1.5-pro", "gemini-1.5-flash", "gemini-pro")
+	}
+
+	Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
+		recommendations.forEach { model ->
+			Text(
+				text = "- $model",
+				style = MaterialTheme.typography.bodyMedium,
+				color = MaterialTheme.colorScheme.onSurfaceVariant
 			)
-			.background(
-				color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
-				shape = RoundedCornerShape(24.dp)
-			)
-			.padding(Spacing.large),
-		verticalArrangement = Arrangement.spacedBy(Spacing.medium),
-		content = content
-	)
+		}
+	}
 }
 
 @Composable
