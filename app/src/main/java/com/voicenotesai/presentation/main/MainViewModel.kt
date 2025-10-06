@@ -106,23 +106,33 @@ class MainViewModel @Inject constructor(
                 return@launch
             }
 
-            // Start recording
+            // Start recording with comprehensive error handling
             try {
                 recordVoiceUseCase.invoke().collect { recordingState ->
+                    // Defensive check - ensure we're in a valid state for this transition
                     when (recordingState) {
                         is RecordingState.Idle -> {
                             _uiState.value = MainUiState.Idle
                             recordingRequested = false
                         }
                         is RecordingState.Recording -> {
-                            _uiState.value = MainUiState.Recording(recordingState.duration)
+                            // Validate duration is not negative
+                            val safeDuration = recordingState.duration.coerceAtLeast(0)
+                            _uiState.value = MainUiState.Recording(safeDuration)
                         }
                         is RecordingState.Processing -> {
                             _uiState.value = MainUiState.Processing("Converting speech to text...")
                         }
                         is RecordingState.Success -> {
-                            currentTranscribedText = recordingState.transcribedText
-                            generateNotes(recordingState.transcribedText)
+                            // Validate transcribed text is not empty
+                            val text = recordingState.transcribedText.trim()
+                            if (text.isNotEmpty()) {
+                                currentTranscribedText = text
+                                generateNotes(text)
+                            } else {
+                                // Handle edge case: success with empty text
+                                _uiState.value = MainUiState.Error(AppError.NoSpeechDetected)
+                            }
                             recordingRequested = false
                         }
                         is RecordingState.Error -> {
@@ -132,8 +142,18 @@ class MainViewModel @Inject constructor(
                         }
                     }
                 }
+            } catch (e: IllegalStateException) {
+                // Handle state-related errors (e.g., recording already in progress)
+                val error = AppError.RecordingFailed("Recording in invalid state. Please try again.")
+                _uiState.value = MainUiState.Error(error)
+                recordingRequested = false
+            } catch (e: SecurityException) {
+                // Permission was revoked during recording
+                _uiState.value = MainUiState.Error(AppError.PermissionDenied("RECORD_AUDIO"))
+                recordingRequested = false
             } catch (e: Exception) {
-                val error = AppError.RecordingFailed(e.message ?: "Unknown error")
+                // Catch any other unexpected errors
+                val error = AppError.RecordingFailed(e.message ?: "An unexpected error occurred. Please try again.")
                 _uiState.value = MainUiState.Error(error)
                 recordingRequested = false
             }
@@ -142,14 +162,25 @@ class MainViewModel @Inject constructor(
 
     /**
      * Stops the current recording.
+     * Handles edge cases gracefully to prevent crashes.
      */
     fun stopRecording() {
         viewModelScope.launch {
             try {
-                // Just trigger the stop - the Flow will handle the result
-                recordVoiceUseCase.stopRecording()
+                // Check if actually recording before stopping
+                if (_uiState.value is MainUiState.Recording) {
+                    // Just trigger the stop - the Flow will handle the result
+                    recordVoiceUseCase.stopRecording()
+                } else {
+                    // Not recording - ignore stop request gracefully
+                    // This can happen if user taps stop multiple times quickly
+                }
+            } catch (e: IllegalStateException) {
+                // Not currently recording - this is not an error, just ignore
+                // User might have tapped stop after recording already ended
             } catch (e: Exception) {
-                val error = AppError.RecordingFailed(e.message ?: "Failed to stop recording")
+                // Only show error if it's a real problem
+                val error = AppError.RecordingFailed(e.message ?: "Failed to stop recording. Recording may have already ended.")
                 _uiState.value = MainUiState.Error(error)
             }
         }
@@ -157,37 +188,112 @@ class MainViewModel @Inject constructor(
 
     /**
      * Generates AI-powered notes from transcribed text.
+     * Validates input before processing.
      */
     private fun generateNotes(transcribedText: String) {
         viewModelScope.launch {
-            _uiState.value = MainUiState.Processing("Generating notes with AI...")
+            try {
+                // Defensive validation
+                val cleanedText = transcribedText.trim()
+                if (cleanedText.isEmpty()) {
+                    _uiState.value = MainUiState.Error(AppError.NoSpeechDetected)
+                    recordingRequested = false
+                    return@launch
+                }
+                
+                _uiState.value = MainUiState.Processing("Generating notes with AI...")
 
-            val result = generateNotesUseCase(transcribedText)
-            result.onSuccess { generatedNotes ->
-                // Save the note automatically
-                saveNote(generatedNotes, transcribedText)
-            }.onFailure { error ->
-                val appError = mapApiError(error)
-                _uiState.value = MainUiState.Error(appError)
+                val result = generateNotesUseCase(cleanedText)
+                result.onSuccess { generatedNotes ->
+                    // Validate generated content
+                    val trimmedNotes = generatedNotes.trim()
+                    if (trimmedNotes.isEmpty()) {
+                        _uiState.value = MainUiState.Error(AppError.Unknown("AI generated empty content. Please try again."))
+                        recordingRequested = false
+                    } else {
+                        // Save the note automatically
+                        saveNote(trimmedNotes, cleanedText)
+                    }
+                }.onFailure { error ->
+                    // Check for specific error types
+                    when (error) {
+                        is IllegalArgumentException -> {
+                            // Blank text error from use case
+                            _uiState.value = MainUiState.Error(AppError.NoSpeechDetected)
+                        }
+                        is IllegalStateException -> {
+                            // Settings not configured
+                            val message = error.message ?: "Settings not configured"
+                            if (message.contains("not configured", ignoreCase = true)) {
+                                _uiState.value = MainUiState.Error(AppError.SettingsNotConfigured)
+                            } else {
+                                _uiState.value = MainUiState.Error(AppError.Unknown(message))
+                            }
+                        }
+                        else -> {
+                            // Other errors - map to appropriate AppError
+                            val appError = mapApiError(error)
+                            _uiState.value = MainUiState.Error(appError)
+                        }
+                    }
+                    recordingRequested = false
+                }
+            } catch (e: IllegalArgumentException) {
+                // Catch blank text exceptions
+                _uiState.value = MainUiState.Error(AppError.NoSpeechDetected)
+                recordingRequested = false
+            } catch (e: IllegalStateException) {
+                // Catch settings errors
+                _uiState.value = MainUiState.Error(AppError.SettingsNotConfigured)
+                recordingRequested = false
+            } catch (e: Exception) {
+                // Catch any unexpected errors in note generation
+                val error = AppError.Unknown(e.message ?: "Failed to generate notes. Please try again.")
+                _uiState.value = MainUiState.Error(error)
+                recordingRequested = false
             }
         }
     }
 
     /**
      * Saves the generated note to the database.
+     * Validates data before saving.
      */
     private suspend fun saveNote(content: String, transcribedText: String) {
         try {
+            // Defensive validation before saving
+            val trimmedContent = content.trim()
+            val trimmedTranscription = transcribedText.trim()
+            
+            if (trimmedContent.isEmpty()) {
+                _uiState.value = MainUiState.Error(AppError.Unknown("Cannot save empty note content."))
+                recordingRequested = false
+                return
+            }
+            
+            if (trimmedTranscription.isEmpty()) {
+                _uiState.value = MainUiState.Error(AppError.NoSpeechDetected)
+                recordingRequested = false
+                return
+            }
+            
             val note = Note(
-                content = content,
-                transcribedText = transcribedText,
+                content = trimmedContent,
+                transcribedText = trimmedTranscription,
                 timestamp = System.currentTimeMillis()
             )
             notesRepository.saveNote(note)
-            _uiState.value = MainUiState.Success(content)
+            _uiState.value = MainUiState.Success(trimmedContent)
+        } catch (e: IllegalArgumentException) {
+            // Invalid note data
+            val error = AppError.StorageError("Invalid note data: ${e.message}")
+            _uiState.value = MainUiState.Error(error)
+            recordingRequested = false
         } catch (e: Exception) {
+            // Database or other errors
             val error = AppError.StorageError(e.message ?: "Failed to save note")
             _uiState.value = MainUiState.Error(error)
+            recordingRequested = false
         }
     }
 
@@ -232,20 +338,63 @@ class MainViewModel @Inject constructor(
 
     /**
      * Maps recording error messages to AppError types.
+     * Provides graceful handling for all edge cases.
      */
     private fun mapRecordingError(message: String): AppError {
         return when {
+            // No speech detected cases
             message.contains("no speech", ignoreCase = true) -> AppError.NoSpeechDetected
+            message.contains("didn't catch", ignoreCase = true) -> AppError.NoSpeechDetected
+            message.contains("couldn't understand", ignoreCase = true) -> AppError.NoSpeechDetected
+            
+            // Timeout cases
             message.contains("timeout", ignoreCase = true) -> AppError.RecordingTimeout
+            message.contains("timed out", ignoreCase = true) -> AppError.RecordingTimeout
+            
+            // Permission issues
+            message.contains("permission", ignoreCase = true) -> AppError.PermissionDenied("RECORD_AUDIO")
+            
+            // Network issues
+            message.contains("network", ignoreCase = true) -> AppError.NetworkError(message)
+            message.contains("internet", ignoreCase = true) -> AppError.NetworkError("Speech recognition requires internet connection.")
+            message.contains("connection", ignoreCase = true) -> AppError.NetworkError("Please check your internet connection.")
+            
+            // Service availability
             message.contains("unavailable", ignoreCase = true) -> AppError.SpeechRecognizerUnavailable
+            message.contains("busy", ignoreCase = true) -> AppError.RecordingFailed("Speech recognition service is busy. Please try again in a moment.")
+            message.contains("server error", ignoreCase = true) -> AppError.RecordingFailed("Speech recognition service error. Please try again.")
+            
+            // Audio/microphone issues
+            message.contains("audio", ignoreCase = true) -> AppError.RecordingFailed("Audio recording error. Please check your microphone.")
+            message.contains("microphone", ignoreCase = true) -> AppError.RecordingFailed("Microphone error. Please check device settings.")
+            
+            // Generic fallback
             else -> AppError.RecordingFailed(message)
         }
     }
 
     /**
      * Maps API errors to AppError types.
+     * Handles all error scenarios gracefully.
      */
     private fun mapApiError(error: Throwable): AppError {
+        // Check exception type first
+        when (error) {
+            is IllegalArgumentException -> {
+                return AppError.NoSpeechDetected
+            }
+            is IllegalStateException -> {
+                val message = error.message ?: ""
+                return when {
+                    message.contains("not configured", ignoreCase = true) -> AppError.SettingsNotConfigured
+                    message.contains("API key", ignoreCase = true) -> AppError.InvalidAPIKey
+                    message.contains("incomplete", ignoreCase = true) -> AppError.SettingsNotConfigured
+                    else -> AppError.Unknown(message)
+                }
+            }
+        }
+        
+        // Check error message
         val message = error.message ?: "Unknown error"
         return when {
             message.contains("not configured", ignoreCase = true) -> 
@@ -260,9 +409,15 @@ class MainViewModel @Inject constructor(
                 AppError.NetworkError(message)
             message.contains("timeout", ignoreCase = true) -> 
                 AppError.RequestTimeout
-            message.contains("500") || message.contains("502") || message.contains("503") -> 
-                AppError.APIError(500, "Service temporarily unavailable")
-            else -> AppError.Unknown(message)
+            message.contains("500") -> 
+                AppError.ApiError("Service temporarily unavailable", code = 500)
+            message.contains("502") -> 
+                AppError.ApiError("Service temporarily unavailable", code = 502)
+            message.contains("503") -> 
+                AppError.ApiError("Service temporarily unavailable", code = 503)
+            message.contains("empty", ignoreCase = true) || message.contains("blank", ignoreCase = true) ->
+                AppError.NoSpeechDetected
+            else -> AppError.ApiError(message)
         }
     }
 }

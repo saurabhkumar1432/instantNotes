@@ -101,48 +101,78 @@ class AudioRepositoryImpl @Inject constructor(
                 }
                 
                 isCurrentlyRecording = false
+                val hadSpeech = hasReceivedSpeech
                 hasReceivedSpeech = false
                 
+                // Map error codes to user-friendly messages with context
                 val errorMessage = when (error) {
-                    SpeechRecognizer.ERROR_AUDIO -> "Audio recording error. Please check your microphone."
-                    SpeechRecognizer.ERROR_CLIENT -> "Recording cancelled. Please try again."
+                    SpeechRecognizer.ERROR_AUDIO -> "Audio recording error. Please check your microphone and try again."
+                    SpeechRecognizer.ERROR_CLIENT -> "Recording was cancelled. Please try again."
                     SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "Microphone permission is required to record audio."
-                    SpeechRecognizer.ERROR_NETWORK -> "Network error. Speech recognition requires internet connection."
-                    SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> "Network timeout. Please check your internet connection."
-                    SpeechRecognizer.ERROR_NO_MATCH -> if (hasReceivedSpeech) {
-                        "Speech detected but couldn't understand. Please try again."
-                    } else {
-                        "No speech detected. Please speak clearly and try again."
+                    SpeechRecognizer.ERROR_NETWORK -> "Network error. Speech recognition requires an active internet connection."
+                    SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> "Network timeout. Please check your internet connection and try again."
+                    SpeechRecognizer.ERROR_NO_MATCH -> {
+                        if (hadSpeech) {
+                            "Speech was detected but couldn't be understood clearly. Please speak clearly and try again."
+                        } else {
+                            "No speech detected. Please ensure you're speaking clearly into the microphone and try again."
+                        }
                     }
-                    SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> "Speech recognition service is busy. Please try again in a moment."
-                    SpeechRecognizer.ERROR_SERVER -> "Speech recognition server error. Please try again later."
-                    SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> if (hasReceivedSpeech) {
-                        "Speech input timed out. Your recording might be incomplete."
-                    } else {
-                        "No speech input detected. Please try speaking again."
+                    SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> "Speech recognition service is currently busy. Please wait a moment and try again."
+                    SpeechRecognizer.ERROR_SERVER -> "Speech recognition server error. Please try again in a moment."
+                    SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> {
+                        if (hadSpeech) {
+                            "Speech input timed out after detecting initial speech. Please try again."
+                        } else {
+                            "No speech detected within the time limit. Please start speaking immediately after tapping the microphone."
+                        }
                     }
-                    else -> "An unexpected error occurred (code: $error). Please try again."
+                    else -> "An unexpected error occurred (Error code: $error). Please restart the app and try again."
                 }
-                trySend(RecordingState.Error(errorMessage))
-                close()
+                
+                // CRITICAL: Always send error and close, even if send fails
+                try {
+                    trySend(RecordingState.Error(errorMessage))
+                } finally {
+                    // Close the flow regardless of whether send succeeded
+                    close()
+                }
             }
 
             override fun onResults(results: Bundle?) {
                 isCurrentlyRecording = false
                 hasReceivedSpeech = false
                 
-                val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-                if (matches.isNullOrEmpty()) {
-                    trySend(RecordingState.Error("No speech detected. Please try again."))
-                } else {
-                    val transcribedText = matches[0]
+                // CRITICAL: Use try-finally to ensure Flow always closes
+                try {
+                    // Defensive null checks and validation
+                    if (results == null) {
+                        trySend(RecordingState.Error("Recording failed. No results received. Please try again."))
+                        return
+                    }
+                    
+                    val matches = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                    if (matches.isNullOrEmpty()) {
+                        trySend(RecordingState.Error("No speech detected. Please ensure you're speaking clearly and try again."))
+                        return
+                    }
+                    
+                    // Get first match with null safety
+                    val transcribedText = matches.firstOrNull()?.trim() ?: ""
+                    
                     if (transcribedText.isBlank()) {
-                        trySend(RecordingState.Error("No speech detected. Please try again."))
+                        trySend(RecordingState.Error("No speech detected. Please speak clearly into the microphone and try again."))
                     } else {
+                        // Success - we have valid transcribed text
                         trySend(RecordingState.Success(transcribedText))
                     }
+                } catch (e: Exception) {
+                    // Handle any unexpected errors in result processing
+                    trySend(RecordingState.Error("Failed to process recording results. Please try again."))
+                } finally {
+                    // CRITICAL: Always close the flow, even if trySend failed
+                    close()
                 }
-                close()
             }
 
             override fun onPartialResults(partialResults: Bundle?) {

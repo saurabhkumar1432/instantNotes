@@ -28,8 +28,7 @@ sealed class AppError {
     /**
      * API-related errors
      */
-    data class APIError(val code: Int, val message: String) : AppError()
-    data class ApiError(val message: String) : AppError()  // Alternate form for simple errors
+    data class ApiError(val message: String, val code: Int? = null) : AppError()
     object InvalidAPIKey : AppError()
     object RateLimitExceeded : AppError()
     object InvalidRequest : AppError()
@@ -80,16 +79,17 @@ fun AppError.toUserMessage(): String {
             "Request timed out. Please check your connection and try again."
 
         // API errors
-        is AppError.APIError -> when (code) {
-            401 -> "Invalid API key. Please check your settings and ensure your API key is correct."
-            403 -> "Access forbidden. Please verify your API key has the necessary permissions."
-            429 -> "Rate limit exceeded. Please wait a moment and try again."
-            400 -> "Invalid request: $message. Please try again or check your settings."
-            500, 502, 503 -> "AI service is temporarily unavailable. Please try again later."
-            else -> "API error ($code): $message. Please try again."
+        is AppError.ApiError -> {
+            when (code) {
+                401 -> "Invalid API key. Please check your settings and ensure your API key is correct."
+                403 -> "Access forbidden. Please verify your API key has the necessary permissions."
+                429 -> "Rate limit exceeded. Please wait a moment and try again."
+                400 -> "Invalid request: $message. Please try again or check your settings."
+                500, 502, 503 -> "AI service is temporarily unavailable. Please try again later."
+                null -> "API error: $message"
+                else -> "API error ($code): $message. Please try again."
+            }
         }
-        is AppError.ApiError ->
-            "API error: $message"
         is AppError.InvalidAPIKey -> 
             "Invalid API key. Please check your settings and ensure your API key is correct."
         is AppError.RateLimitExceeded -> 
@@ -123,7 +123,7 @@ fun AppError.getActionGuidance(): String? {
             "Tap 'Open Settings' to grant microphone permission."
         is AppError.SettingsNotConfigured -> 
             "Tap 'Go to Settings' to configure your AI provider."
-        is AppError.InvalidAPIKey, is AppError.APIError, is AppError.ApiError -> 
+        is AppError.InvalidAPIKey, is AppError.ApiError -> 
             "Check your API key in Settings."
         is AppError.NoInternetConnection -> 
             "Connect to Wi-Fi or mobile data and try again."
@@ -143,9 +143,8 @@ fun AppError.canRetry(): Boolean {
         is AppError.RequestTimeout,
         is AppError.RecordingFailed,
         is AppError.NoSpeechDetected,
-        is AppError.RateLimitExceeded,
-        is AppError.APIError,
-        is AppError.ApiError -> true
+    is AppError.RateLimitExceeded,
+    is AppError.ApiError -> true
         else -> false
     }
 }
