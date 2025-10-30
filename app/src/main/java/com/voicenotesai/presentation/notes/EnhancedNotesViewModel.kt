@@ -19,6 +19,7 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import androidx.annotation.StringRes
 import javax.inject.Inject
 
 /**
@@ -402,33 +403,33 @@ class EnhancedNotesViewModel @Inject constructor(
 /**
  * Filter options for notes.
  */
-enum class NotesFilter(val displayName: String) {
-    ALL("All Notes"),
-    TODAY("Today"),
-    THIS_WEEK("This Week"),
-    THIS_MONTH("This Month"),
-    LONG_NOTES("Long Notes"),
-    SHORT_NOTES("Short Notes")
+enum class NotesFilter(@StringRes val displayNameRes: Int) {
+    ALL(com.voicenotesai.R.string.filter_all_notes),
+    TODAY(com.voicenotesai.R.string.filter_today),
+    THIS_WEEK(com.voicenotesai.R.string.filter_this_week),
+    THIS_MONTH(com.voicenotesai.R.string.filter_this_month),
+    LONG_NOTES(com.voicenotesai.R.string.filter_long_notes),
+    SHORT_NOTES(com.voicenotesai.R.string.filter_short_notes)
 }
 
 /**
  * Sort options for notes.
  */
-enum class NotesSortType(val displayName: String) {
-    NEWEST_FIRST("Newest First"),
-    OLDEST_FIRST("Oldest First"),
-    SHORTEST_FIRST("Shortest First"),
-    LONGEST_FIRST("Longest First"),
-    ALPHABETICAL("Alphabetical")
+enum class NotesSortType(@StringRes val displayNameRes: Int) {
+    NEWEST_FIRST(com.voicenotesai.R.string.sort_newest_first),
+    OLDEST_FIRST(com.voicenotesai.R.string.sort_oldest_first),
+    SHORTEST_FIRST(com.voicenotesai.R.string.sort_shortest_first),
+    LONGEST_FIRST(com.voicenotesai.R.string.sort_longest_first),
+    ALPHABETICAL(com.voicenotesai.R.string.sort_alphabetical)
 }
 
 /**
  * Export format options.
  */
-enum class ExportFormat(val displayName: String, val fileExtension: String) {
-    TEXT("Plain Text", "txt"),
-    MARKDOWN("Markdown", "md"),
-    JSON("JSON", "json")
+enum class ExportFormat(@StringRes val displayNameRes: Int, val fileExtension: String) {
+    TEXT(com.voicenotesai.R.string.export_plain_text, "txt"),
+    MARKDOWN(com.voicenotesai.R.string.export_markdown, "md"),
+    JSON(com.voicenotesai.R.string.export_json, "json")
 }
 
 /**

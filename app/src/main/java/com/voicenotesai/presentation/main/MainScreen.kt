@@ -77,6 +77,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -94,7 +95,7 @@ import com.voicenotesai.domain.model.AppError
 import com.voicenotesai.domain.model.canRetry
 import com.voicenotesai.domain.model.getActionGuidance
 import com.voicenotesai.domain.model.shouldNavigateToSettings
-import com.voicenotesai.domain.model.toUserMessage
+import com.voicenotesai.presentation.components.toLocalizedMessage
 import com.voicenotesai.presentation.animations.SlideInContent
 import com.voicenotesai.presentation.animations.SlideDirection
 import com.voicenotesai.presentation.components.EnhancedErrorCard
@@ -151,12 +152,12 @@ fun MainScreen(
 				title = {
 					Column(verticalArrangement = Arrangement.spacedBy(Spacing.extraSmall)) {
 						Text(
-							text = "Instant Notes",
+							text = stringResource(id = com.voicenotesai.R.string.instant_notes_title),
 							style = MaterialTheme.typography.titleLarge,
 							fontWeight = FontWeight.SemiBold
 						)
 						Text(
-							text = "Voice-first capture for structured, shareable notes.",
+							text = stringResource(id = com.voicenotesai.R.string.instant_notes_subtitle),
 							style = MaterialTheme.typography.bodySmall,
 							color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.65f)
 						)
@@ -169,6 +170,7 @@ fun MainScreen(
 				),
 				actions = {
 					val haptic = LocalHapticFeedback.current
+					val viewSavedNotesDesc = stringResource(id = com.voicenotesai.R.string.view_saved_notes)
 					IconButton(
 						onClick = {
 							haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
@@ -176,14 +178,15 @@ fun MainScreen(
 						},
 						modifier = Modifier
 							.semantics {
-								contentDescription = "View all saved notes"
-							}
+									contentDescription = viewSavedNotesDesc
+								}
 					) {
 						Icon(
 							imageVector = Icons.Default.List,
 							contentDescription = null // Already provided by parent
 						)
 					}
+					val openAISettingsDesc = stringResource(id = com.voicenotesai.R.string.open_ai_settings)
 					IconButton(
 						onClick = {
 							haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
@@ -191,8 +194,8 @@ fun MainScreen(
 						},
 						modifier = Modifier
 							.semantics {
-								contentDescription = "Open AI settings and configuration"
-							}
+									contentDescription = openAISettingsDesc
+								}
 					) {
 						Icon(
 							imageVector = Icons.Default.Settings,
@@ -293,7 +296,8 @@ fun MainScreen(
 					horizontalAlignment = Alignment.CenterHorizontally
 				) {
 					// Smart retry suggestion based on error type
-					val errorMessage = error.toUserMessage()
+					val localized = error.toLocalizedMessage()
+					val errorMessage = stringResource(id = localized.resId, *localized.args)
 					val retryType = when {
 						errorMessage.contains("microphone", ignoreCase = true) || 
 						errorMessage.contains("audio", ignoreCase = true) -> RetryType.CheckMicrophone
@@ -332,12 +336,9 @@ fun MainScreen(
 	if (showPermissionRationale) {
 		AlertDialog(
 			onDismissRequest = { showPermissionRationale = false },
-			title = { Text("Microphone Permission Needed") },
+			title = { Text(stringResource(id = com.voicenotesai.R.string.permission_dialog_title)) },
 			text = {
-				Text(
-					"Instant Notes only requests access while you record. Raw audio stays on this device; " +
-						"only the transcription is shared with your configured AI provider."
-				)
+				Text(stringResource(id = com.voicenotesai.R.string.permission_dialog_text))
 			},
 			confirmButton = {
 				TextButton(
@@ -346,12 +347,12 @@ fun MainScreen(
 						microphonePermissionState.launchPermissionRequest()
 					}
 				) {
-					Text("Allow access")
+					Text(stringResource(id = com.voicenotesai.R.string.allow_access))
 				}
 			},
 			dismissButton = {
 				TextButton(onClick = { showPermissionRationale = false }) {
-					Text("Not Now")
+					Text(stringResource(id = com.voicenotesai.R.string.not_now))
 				}
 			}
 		)
@@ -360,11 +361,9 @@ fun MainScreen(
 	if (showPermissionDeniedDialog) {
 		AlertDialog(
 			onDismissRequest = { showPermissionDeniedDialog = false },
-			title = { Text("Turn On Microphone") },
+			title = { Text(stringResource(id = com.voicenotesai.R.string.permission_denied_title)) },
 			text = {
-				Text(
-					"Recording is unavailable because microphone access is disabled. Enable the permission from Settings to continue."
-				)
+				Text(stringResource(id = com.voicenotesai.R.string.permission_denied_text))
 			},
 			confirmButton = {
 				TextButton(
@@ -376,12 +375,12 @@ fun MainScreen(
 						context.startActivity(intent)
 					}
 				) {
-					Text("Open settings")
+					Text(stringResource(id = com.voicenotesai.R.string.open_settings))
 				}
 			},
 			dismissButton = {
 				TextButton(onClick = { showPermissionDeniedDialog = false }) {
-					Text("Cancel")
+					Text(stringResource(id = com.voicenotesai.R.string.cancel))
 				}
 			}
 		)
@@ -403,7 +402,7 @@ private fun IdleContent(
 		Spacer(modifier = Modifier.height(Spacing.extraLarge))
 
 		Text(
-			text = "Capture ideas instantly",
+			text = stringResource(id = com.voicenotesai.R.string.capture_headline),
 			style = MaterialTheme.typography.headlineLarge,
 			fontWeight = FontWeight.SemiBold,
 			textAlign = TextAlign.Center
@@ -412,7 +411,7 @@ private fun IdleContent(
 		Spacer(modifier = Modifier.height(Spacing.small))
 
 		Text(
-			text = "Press record and let Instant Notes transform the conversation into polished summaries, decisions, and action items.",
+			text = stringResource(id = com.voicenotesai.R.string.capture_description),
 			style = MaterialTheme.typography.bodyLarge,
 			textAlign = TextAlign.Center,
 			color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -431,18 +430,18 @@ private fun IdleContent(
 			) {
 				FeatureRow(
 					icon = Icons.Filled.Description,
-					title = "Structured output",
-					subtitle = "Concise summaries with highlights and follow-ups ready to share."
+					title = stringResource(id = com.voicenotesai.R.string.feature_structured_title),
+					subtitle = stringResource(id = com.voicenotesai.R.string.feature_structured_sub)
 				)
 				FeatureRow(
 					icon = Icons.Filled.Schedule,
-					title = "Meeting-ready notes",
-					subtitle = "Timestamped details arrive the moment you stop recording."
+					title = stringResource(id = com.voicenotesai.R.string.feature_meeting_title),
+					subtitle = stringResource(id = com.voicenotesai.R.string.feature_meeting_sub)
 				)
 				FeatureRow(
 					icon = Icons.Filled.Lock,
-					title = "Privacy built in",
-					subtitle = "Audio stays on device—only approved text reaches your AI provider."
+					title = stringResource(id = com.voicenotesai.R.string.feature_privacy_title),
+					subtitle = stringResource(id = com.voicenotesai.R.string.feature_privacy_sub)
 				)
 			}
 		}
@@ -455,9 +454,9 @@ private fun IdleContent(
 				.horizontalScroll(rememberScrollState()),
 			horizontalArrangement = Arrangement.spacedBy(Spacing.small)
 		) {
-			InsightChip(icon = Icons.Filled.Bolt, label = "Realtime transcription")
-			InsightChip(icon = Icons.Filled.TaskAlt, label = "Action item detection")
-			InsightChip(icon = Icons.Filled.Lock, label = "Enterprise security")
+			InsightChip(icon = Icons.Filled.Bolt, label = stringResource(id = com.voicenotesai.R.string.insight_realtime))
+			InsightChip(icon = Icons.Filled.TaskAlt, label = stringResource(id = com.voicenotesai.R.string.insight_actions))
+			InsightChip(icon = Icons.Filled.Lock, label = stringResource(id = com.voicenotesai.R.string.insight_enterprise))
 		}
 
 		Spacer(modifier = Modifier.height(Spacing.huge))
@@ -472,7 +471,7 @@ private fun IdleContent(
 		Spacer(modifier = Modifier.height(Spacing.large))
 
 		Text(
-			text = "Review, copy, and share the transcript immediately after recording completes.",
+			text = stringResource(id = com.voicenotesai.R.string.review_share_description),
 			style = MaterialTheme.typography.bodyMedium,
 			color = MaterialTheme.colorScheme.onSurfaceVariant,
 			textAlign = TextAlign.Center
@@ -506,12 +505,12 @@ private fun PermissionRequiredContent(
 				verticalArrangement = Arrangement.spacedBy(Spacing.medium)
 			) {
 				Text(
-					text = "Microphone access required",
+					text = stringResource(id = com.voicenotesai.R.string.microphone_access_required),
 					style = MaterialTheme.typography.headlineSmall,
 					fontWeight = FontWeight.SemiBold
 				)
 				Text(
-					text = "Instant Notes only listens while you record and stores audio locally. Enable the microphone to capture conversations hands-free.",
+					text = stringResource(id = com.voicenotesai.R.string.microphone_access_desc),
 					style = MaterialTheme.typography.bodyMedium,
 					color = MaterialTheme.colorScheme.onSurfaceVariant
 				)
@@ -522,14 +521,14 @@ private fun PermissionRequiredContent(
 			onClick = onRequestPermission,
 			modifier = Modifier.fillMaxWidth()
 		) {
-			Text("Allow microphone access")
+			Text(stringResource(id = com.voicenotesai.R.string.allow_microphone_button))
 		}
 
 		OutlinedButton(
 			onClick = onOpenSettings,
 			modifier = Modifier.fillMaxWidth()
 		) {
-			Text("Open app settings")
+			Text(stringResource(id = com.voicenotesai.R.string.open_app_settings))
 		}
 
 		Spacer(modifier = Modifier.height(Spacing.extraLarge))
@@ -565,7 +564,7 @@ private fun RecordingContent(
 			verticalArrangement = Arrangement.spacedBy(Spacing.small)
 		) {
 			Text(
-				text = "Recording in progress",
+				text = stringResource(id = com.voicenotesai.R.string.recording_in_progress),
 				style = MaterialTheme.typography.headlineLarge,
 				fontWeight = FontWeight.ExtraBold
 			)
@@ -606,7 +605,7 @@ private fun RecordingContent(
 		)
 
 		Text(
-			text = "Speak naturally. Pause or tap stop whenever you want to review your notes.",
+			text = stringResource(id = com.voicenotesai.R.string.speak_instructions),
 			style = MaterialTheme.typography.bodyLarge,
 			color = MaterialTheme.colorScheme.onSurfaceVariant,
 			fontWeight = FontWeight.Medium,
@@ -658,7 +657,7 @@ private fun ProcessingContent(
 				)
 
 				Text(
-					text = "We’re transcribing and organizing your notes.",
+					text = stringResource(id = com.voicenotesai.R.string.processing_subtext),
 					style = MaterialTheme.typography.bodyMedium,
 					color = MaterialTheme.colorScheme.onSurfaceVariant,
 					textAlign = TextAlign.Center
@@ -690,7 +689,7 @@ private fun SuccessContent(
 		Spacer(modifier = Modifier.height(Spacing.small))
 
 		Text(
-			text = "Notes ready to share",
+			text = stringResource(id = com.voicenotesai.R.string.notes_ready),
 			style = MaterialTheme.typography.headlineLarge,
 			fontWeight = FontWeight.SemiBold
 		)
@@ -716,53 +715,56 @@ private fun SuccessContent(
 			)
 		}
 
-		FilledTonalButton(
+	val copyGeneratedDesc = stringResource(id = com.voicenotesai.R.string.copy_generated_notes_description)
+	FilledTonalButton(
 			onClick = {
 				haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
 				onCopy()
 			},
-			modifier = Modifier
+				modifier = Modifier
 				.fillMaxWidth()
 				.semantics {
-					contentDescription = "Copy generated notes to clipboard"
+					contentDescription = copyGeneratedDesc
 				}
 		) {
 			Text(
-				"Copy to clipboard",
+				stringResource(id = com.voicenotesai.R.string.copy_to_clipboard),
 				style = ExtendedTypography.buttonText
 			)
 		}
 
-		FilledTonalButton(
+	val shareGeneratedDesc = stringResource(id = com.voicenotesai.R.string.share_generated_notes_description)
+	FilledTonalButton(
 			onClick = {
 				haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
 				onShare()
 			},
-			modifier = Modifier
+				modifier = Modifier
 				.fillMaxWidth()
 				.semantics {
-					contentDescription = "Share generated notes with other apps"
+					contentDescription = shareGeneratedDesc
 				}
 		) {
 			Text(
-				"Share",
+				stringResource(id = com.voicenotesai.R.string.share),
 				style = ExtendedTypography.buttonText
 			)
 		}
 
-		Button(
+	val startVoiceDesc = stringResource(id = com.voicenotesai.R.string.start_voice_recording_description)
+	Button(
 			onClick = {
 				haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
 				onNewRecording()
 			},
-			modifier = Modifier
+				modifier = Modifier
 				.fillMaxWidth()
 				.semantics {
-					contentDescription = "Start a new voice recording"
+					contentDescription = startVoiceDesc
 				}
 		) {
 			Text(
-				"Start new recording",
+				stringResource(id = com.voicenotesai.R.string.start_new_recording),
 				style = ExtendedTypography.buttonText
 			)
 		}
@@ -783,19 +785,19 @@ private fun SuccessContent(
 			horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
 			verticalAlignment = Alignment.CenterVertically
 		) {
-			Surface(
-				shape = CircleShape,
-				color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
-			) {
-				Icon(
-					imageVector = icon,
-					contentDescription = null,
-					tint = MaterialTheme.colorScheme.primary,
-					modifier = Modifier
-						.padding(Spacing.small)
-						.size(28.dp)
-				)
-			}
+				Surface(
+					shape = CircleShape,
+					color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+				) {
+					Icon(
+						imageVector = icon,
+						contentDescription = title, // Describe the icon by its feature title for assistive tech
+						tint = MaterialTheme.colorScheme.primary,
+						modifier = Modifier
+							.padding(Spacing.small)
+							.size(28.dp)
+					)
+				}
 
 			Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
 				Text(
@@ -830,7 +832,7 @@ private fun SuccessContent(
 			) {
 				Icon(
 					imageVector = icon,
-					contentDescription = null,
+					contentDescription = label, // Describe the insight icon with the chip label
 					tint = MaterialTheme.colorScheme.onSecondaryContainer,
 					modifier = Modifier.size(18.dp)
 				)
@@ -864,7 +866,8 @@ private fun formatDurationForAccessibility(milliseconds: Long): String {
 
 private fun copyToClipboard(context: Context, text: String) {
 	val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-	val clip = ClipData.newPlainText("Generated Notes", text)
+	val label = context.getString(com.voicenotesai.R.string.generated_notes_label)
+	val clip = ClipData.newPlainText(label, text)
 	clipboard.setPrimaryClip(clip)
 }
 
@@ -872,7 +875,8 @@ private fun shareNotes(context: Context, notes: String) {
 	val intent = Intent(Intent.ACTION_SEND).apply {
 		type = "text/plain"
 		putExtra(Intent.EXTRA_TEXT, notes)
-		putExtra(Intent.EXTRA_SUBJECT, "Voice Notes")
+		putExtra(Intent.EXTRA_SUBJECT, context.getString(com.voicenotesai.R.string.share_subject))
 	}
-	context.startActivity(Intent.createChooser(intent, "Share Notes"))
+	val chooserTitle = context.getString(com.voicenotesai.R.string.share_chooser_title)
+	context.startActivity(Intent.createChooser(intent, chooserTitle))
 }

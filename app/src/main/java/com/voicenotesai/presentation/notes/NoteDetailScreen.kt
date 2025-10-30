@@ -42,6 +42,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.res.stringResource
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -62,7 +63,7 @@ import androidx.lifecycle.viewModelScope
 import com.voicenotesai.data.local.entity.Note
 import com.voicenotesai.data.repository.NotesRepository
 import com.voicenotesai.domain.model.AppError
-import com.voicenotesai.domain.model.toUserMessage
+import com.voicenotesai.presentation.components.toLocalizedMessage
 import com.voicenotesai.presentation.theme.Spacing
 import com.voicenotesai.presentation.theme.glassLayer
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -120,11 +121,20 @@ fun NoteDetailScreen(
         }
     }
 
+    // Precompute strings that will be used from non-composable scopes (LaunchedEffect's block and coroutine callbacks)
+    val retryLabel = stringResource(id = com.voicenotesai.R.string.retry)
+    val localizedError = error?.toLocalizedMessage()
+    val errorMessage = localizedError?.let { stringResource(id = it.resId, *it.args) }
+    val copiedToClipboard = stringResource(id = com.voicenotesai.R.string.copied_to_clipboard)
+    val copyFailedTryShare = stringResource(id = com.voicenotesai.R.string.copy_failed_try_share)
+
     LaunchedEffect(error) {
         error?.let {
+            // Use precomputed strings inside the launched effect (non-composable lambda)
+            val message = errorMessage ?: ""
             val result = snackbarHostState.showSnackbar(
-                message = it.toUserMessage(),
-                actionLabel = "Retry",
+                message = message,
+                actionLabel = retryLabel,
                 duration = SnackbarDuration.Long
             )
             if (result == SnackbarResult.ActionPerformed) {
@@ -140,12 +150,12 @@ fun NoteDetailScreen(
                 title = {
                     Column(verticalArrangement = Arrangement.spacedBy(Spacing.extraSmall)) {
                         Text(
-                            text = "💎 Note preview",
+                            text = stringResource(id = com.voicenotesai.R.string.note_preview_title),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.ExtraBold
                         )
                         Text(
-                            text = "Polished automatically. No cap.",
+                            text = stringResource(id = com.voicenotesai.R.string.note_preview_subtitle),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
                             fontWeight = FontWeight.Medium
@@ -156,7 +166,7 @@ fun NoteDetailScreen(
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = stringResource(id = com.voicenotesai.R.string.go_back_description)
                         )
                     }
                 },
@@ -185,7 +195,7 @@ fun NoteDetailScreen(
                             val success = copyToClipboard(context, note!!.content)
                             scope.launch {
                                 snackbarHostState.showSnackbar(
-                                    message = if (success) "Copied to clipboard" else "Copy failed. Try share instead."
+                                    message = if (success) copiedToClipboard else copyFailedTryShare
                                 )
                             }
                         },
@@ -212,13 +222,13 @@ fun NoteDetailScreen(
                         verticalArrangement = Arrangement.spacedBy(Spacing.medium)
                     ) {
                         Text(
-                            text = "⚠️ Note not found",
+                            text = stringResource(id = com.voicenotesai.R.string.note_not_found_title),
                             style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.ExtraBold,
                             color = MaterialTheme.colorScheme.error
                         )
                         Text(
-                            text = "Might've been deleted or never existed. Whoops! 🤷",
+                            text = stringResource(id = com.voicenotesai.R.string.note_not_found_desc),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onErrorContainer,
                             textAlign = TextAlign.Center,
@@ -321,7 +331,7 @@ private fun NoteContent(
                     contentColor = MaterialTheme.colorScheme.onSecondaryContainer
                 )
             ) {
-                Text("📋 Copy to clipboard", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyLarge)
+                Text(stringResource(id = com.voicenotesai.R.string.copy_to_clipboard_label), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyLarge)
             }
             Button(
                 onClick = onShare,
@@ -336,7 +346,7 @@ private fun NoteContent(
                     contentDescription = null
                 )
                 Spacer(modifier = Modifier.width(Spacing.small))
-                Text("📤 Share externally", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyLarge)
+                Text(stringResource(id = com.voicenotesai.R.string.share_externally_label), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyLarge)
             }
             Button(
                 onClick = onDelete,
@@ -351,7 +361,7 @@ private fun NoteContent(
                     contentDescription = null
                 )
                 Spacer(modifier = Modifier.width(Spacing.small))
-                Text("🗑️ Delete forever", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyLarge)
+                Text(stringResource(id = com.voicenotesai.R.string.delete_forever_label), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyLarge)
             }
         }
     }
@@ -389,8 +399,8 @@ private fun DeleteConfirmationDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Delete Note") },
-        text = { Text("Are you sure you want to delete this note? This action cannot be undone.") },
+        title = { Text(stringResource(id = com.voicenotesai.R.string.delete_note_title)) },
+        text = { Text(stringResource(id = com.voicenotesai.R.string.delete_note_confirm_text)) },
         confirmButton = {
             TextButton(
                 onClick = onConfirm,
@@ -398,12 +408,12 @@ private fun DeleteConfirmationDialog(
                     contentColor = MaterialTheme.colorScheme.error
                 )
             ) {
-                Text("Delete")
+                Text(stringResource(id = com.voicenotesai.R.string.delete_action))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(id = com.voicenotesai.R.string.cancel))
             }
         }
     )
@@ -416,7 +426,7 @@ private fun copyToClipboard(context: Context, text: String): Boolean {
     return try {
         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
         if (clipboard != null) {
-            val clip = ClipData.newPlainText("Note", text)
+            val clip = ClipData.newPlainText(context.getString(com.voicenotesai.R.string.note_clip_label), text)
             clipboard.setPrimaryClip(clip)
             true
         } else {
@@ -437,7 +447,7 @@ private fun shareNote(context: Context, content: String) {
         type = "text/plain"
         putExtra(Intent.EXTRA_TEXT, content)
     }
-    context.startActivity(Intent.createChooser(intent, "Share Note"))
+    context.startActivity(Intent.createChooser(intent, context.getString(com.voicenotesai.R.string.share_chooser_title)))
 }
 
 /**

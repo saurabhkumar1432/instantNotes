@@ -45,6 +45,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -170,6 +171,7 @@ private fun TooltipContent(
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
+        val tooltipContentDesc = stringResource(id = com.voicenotesai.R.string.tooltip_content_desc, data.title, data.description)
         Card(
             modifier = Modifier
                 .padding(Spacing.medium)
@@ -181,8 +183,9 @@ private fun TooltipContent(
                     }
                 )
                 .shadow(8.dp, RoundedCornerShape(16.dp))
+
                 .semantics {
-                    contentDescription = "Help tooltip: ${data.title}. ${data.description}"
+                    contentDescription = tooltipContentDesc
                 },
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(
@@ -214,7 +217,7 @@ private fun TooltipContent(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
-                            contentDescription = "Close tooltip",
+                            contentDescription = stringResource(id = com.voicenotesai.R.string.close_tooltip),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
@@ -236,7 +239,7 @@ private fun TooltipContent(
                         containerColor = MaterialTheme.colorScheme.primary
                     )
                 ) {
-                    Text("Got it!")
+                    Text(stringResource(id = com.voicenotesai.R.string.got_it))
                 }
             }
         }
@@ -461,7 +464,7 @@ private fun TourStepContent(
                 ) {
                     // Skip button
                     TextButton(onClick = onSkip) {
-                        Text("Skip tour")
+                        Text(stringResource(id = com.voicenotesai.R.string.skip_tour))
                     }
                     
                     Row(
@@ -469,10 +472,12 @@ private fun TourStepContent(
                     ) {
                         // Previous button
                         if (!tour.isFirstStep()) {
+                            val previousStepDesc = stringResource(id = com.voicenotesai.R.string.previous_step)
+
                             OutlinedButton(
                                 onClick = onPrevious,
                                 modifier = Modifier.semantics {
-                                    contentDescription = "Previous step"
+                                    contentDescription = previousStepDesc
                                 }
                             ) {
                                 Icon(
@@ -481,22 +486,25 @@ private fun TourStepContent(
                                     modifier = Modifier.size(18.dp)
                                 )
                                 Spacer(modifier = Modifier.width(Spacing.small))
-                                Text("Previous")
+                                Text(stringResource(id = com.voicenotesai.R.string.previous))
                             }
                         }
                         
                         // Next/Finish button
+                        val nextOrFinishDesc = if (tour.isLastStep()) stringResource(id = com.voicenotesai.R.string.help_finish_tour_desc) else stringResource(id = com.voicenotesai.R.string.help_next_step_desc)
+                        val nextOrFinishLabel = if (tour.isLastStep()) stringResource(id = com.voicenotesai.R.string.help_finish) else stringResource(id = com.voicenotesai.R.string.help_next)
+
                         Button(
                             onClick = onNext,
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.primary
                             ),
                             modifier = Modifier.semantics {
-                                contentDescription = if (tour.isLastStep()) "Finish tour" else "Next step"
+                                contentDescription = nextOrFinishDesc
                             }
                         ) {
                             Text(
-                                text = if (tour.isLastStep()) "Finish" else "Next"
+                                text = nextOrFinishLabel
                             )
                             if (!tour.isLastStep()) {
                                 Spacer(modifier = Modifier.width(Spacing.small))
@@ -522,11 +530,13 @@ fun HelpFloatingButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val helpFloatingDesc = stringResource(id = com.voicenotesai.R.string.show_help_and_guidance)
+
     FloatingActionButton(
         onClick = onClick,
         modifier = modifier
             .semantics {
-                contentDescription = "Show help and guidance"
+                contentDescription = helpFloatingDesc
             },
         containerColor = MaterialTheme.colorScheme.tertiary,
         contentColor = MaterialTheme.colorScheme.onTertiary
@@ -543,8 +553,8 @@ fun HelpFloatingButton(
  */
 @Composable
 fun QuickTip(
-    title: String,
-    description: String,
+    @androidx.annotation.StringRes titleRes: Int,
+    @androidx.annotation.StringRes descriptionRes: Int,
     isVisible: Boolean,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
@@ -554,12 +564,14 @@ fun QuickTip(
         enter = fadeIn() + scaleIn(),
         exit = fadeOut() + scaleOut()
     ) {
+        val quickTipDesc = stringResource(id = com.voicenotesai.R.string.quick_tip_format, stringResource(id = titleRes))
+
         Card(
             modifier = modifier
                 .padding(horizontal = Spacing.medium, vertical = Spacing.small)
                 .zIndex(10f)
                 .semantics {
-                    contentDescription = "Quick tip: $title"
+                    contentDescription = quickTipDesc
                 },
             shape = RoundedCornerShape(12.dp),
             colors = CardDefaults.cardColors(
@@ -584,13 +596,13 @@ fun QuickTip(
                     verticalArrangement = Arrangement.spacedBy(Spacing.small)
                 ) {
                     Text(
-                        text = title,
+                        text = stringResource(id = titleRes),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                     Text(
-                        text = description,
+                        text = stringResource(id = descriptionRes),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                     )
@@ -602,7 +614,7 @@ fun QuickTip(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Close,
-                        contentDescription = "Dismiss tip",
+                        contentDescription = stringResource(id = com.voicenotesai.R.string.dismiss_tip),
                         tint = MaterialTheme.colorScheme.onPrimaryContainer,
                         modifier = Modifier.size(16.dp)
                     )

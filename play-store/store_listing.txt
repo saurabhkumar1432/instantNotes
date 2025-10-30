@@ -1,0 +1,4 @@
+Short description: AI-enhanced voice notes that turn conversations into action-ready summaries and tasks.
+
+Full description:
+Instant Notes AI captures voice, transcribes in realtime, and uses an AI provider to produce structured notes, highlighted actions, and meeting-ready summaries. Privacy-first: raw audio stays on your device. Connect your preferred AI provider in Settings to unlock advanced enhancements.

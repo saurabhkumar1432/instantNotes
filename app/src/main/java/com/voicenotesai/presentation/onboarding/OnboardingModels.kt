@@ -4,6 +4,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.annotation.StringRes
 
 /**
  * Represents different steps in the onboarding flow
@@ -21,12 +22,12 @@ sealed class OnboardingStep {
  */
 data class OnboardingPage(
     val step: OnboardingStep,
-    val title: String,
-    val subtitle: String,
-    val description: String,
+    @StringRes val titleRes: Int,
+    @StringRes val subtitleRes: Int,
+    @StringRes val descriptionRes: Int,
     val icon: ImageVector? = null,
-    val primaryButtonText: String,
-    val secondaryButtonText: String? = null,
+    @StringRes val primaryButtonTextRes: Int,
+    @StringRes val secondaryButtonTextRes: Int? = null,
     val showProgress: Boolean = true
 )
 
@@ -37,38 +38,38 @@ object OnboardingConfig {
     val pages = listOf(
         OnboardingPage(
             step = OnboardingStep.Welcome,
-            title = "Welcome to Instant Notes",
-            subtitle = "Capture clear notes from any conversation",
-            description = "Record once and receive structured summaries, action items, and highlights in seconds. Instant Notes keeps you focused on the discussion, not on typing.",
-            primaryButtonText = "Get Started",
-            secondaryButtonText = null,
+            titleRes = com.voicenotesai.R.string.onboarding_welcome_title,
+            subtitleRes = com.voicenotesai.R.string.onboarding_welcome_subtitle,
+            descriptionRes = com.voicenotesai.R.string.onboarding_welcome_desc,
+            primaryButtonTextRes = com.voicenotesai.R.string.onboarding_get_started,
+            secondaryButtonTextRes = null,
             showProgress = false
         ),
         OnboardingPage(
             step = OnboardingStep.PermissionEducation,
-            title = "Enable Voice Capture",
-            subtitle = "Microphone access keeps every idea within reach",
-            description = "Audio stays on your device while we transcribe locally. Only the generated text is sent to your connected AI provider—never the original recording.",
+            titleRes = com.voicenotesai.R.string.onboarding_permission_title,
+            subtitleRes = com.voicenotesai.R.string.onboarding_permission_subtitle,
+            descriptionRes = com.voicenotesai.R.string.onboarding_permission_desc,
             icon = Icons.Default.Warning,
-            primaryButtonText = "Allow Microphone Access",
-            secondaryButtonText = "Not Now"
+            primaryButtonTextRes = com.voicenotesai.R.string.onboarding_allow_microphone,
+            secondaryButtonTextRes = com.voicenotesai.R.string.not_now
         ),
         OnboardingPage(
             step = OnboardingStep.AIProviderSetup,
-            title = "Connect Your AI Provider",
-            subtitle = "Choose the model that matches your workflow",
-            description = "Instant Notes supports OpenAI (GPT), Anthropic (Claude), and Google AI (Gemini). Add your API key to unlock high-quality, structured results.",
+            titleRes = com.voicenotesai.R.string.onboarding_provider_title,
+            subtitleRes = com.voicenotesai.R.string.onboarding_provider_subtitle,
+            descriptionRes = com.voicenotesai.R.string.onboarding_provider_desc,
             icon = Icons.Default.Settings,
-            primaryButtonText = "Configure Provider",
-            secondaryButtonText = "I’ll Do This Later"
+            primaryButtonTextRes = com.voicenotesai.R.string.onboarding_configure_provider,
+            secondaryButtonTextRes = com.voicenotesai.R.string.onboarding_provider_later
         ),
         OnboardingPage(
             step = OnboardingStep.FirstRecording,
-            title = "Try Your First Recording",
-            subtitle = "Run a quick capture to confirm everything is ready",
-            description = "Record a short update—project notes, next steps, or even a reminder. We will format it into clean bullet points and summaries instantly.",
-            primaryButtonText = "Record a Sample",
-            secondaryButtonText = "Skip Demo"
+            titleRes = com.voicenotesai.R.string.onboarding_first_title,
+            subtitleRes = com.voicenotesai.R.string.onboarding_first_subtitle,
+            descriptionRes = com.voicenotesai.R.string.onboarding_first_desc,
+            primaryButtonTextRes = com.voicenotesai.R.string.onboarding_record_sample,
+            secondaryButtonTextRes = com.voicenotesai.R.string.onboarding_skip_demo
         )
     )
     

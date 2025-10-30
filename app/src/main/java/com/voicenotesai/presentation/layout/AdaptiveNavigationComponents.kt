@@ -32,6 +32,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -51,11 +52,13 @@ import com.voicenotesai.presentation.theme.Spacing
 /**
  * Navigation destinations
  */
+import androidx.annotation.StringRes
+
 data class NavDestination(
     val route: String,
-    val label: String,
+    @StringRes val labelRes: Int,
     val icon: ImageVector,
-    val contentDescription: String
+    @StringRes val contentDescriptionRes: Int
 )
 
 /**
@@ -75,21 +78,21 @@ fun AdaptiveScaffold(
         listOf(
             NavDestination(
                 route = "main",
-                label = "Record",
+                labelRes = com.voicenotesai.R.string.nav_label_record,
                 icon = Icons.Default.Warning, // Using Warning as placeholder for record icon
-                contentDescription = "Go to recording screen"
+                contentDescriptionRes = com.voicenotesai.R.string.go_to_recording_nav
             ),
             NavDestination(
                 route = "notes",
-                label = "Notes",
+                labelRes = com.voicenotesai.R.string.nav_label_notes,
                 icon = Icons.Default.List,
-                contentDescription = "View all notes"
+                contentDescriptionRes = com.voicenotesai.R.string.view_all_notes_nav
             ),
             NavDestination(
                 route = "settings",
-                label = "Settings", 
+                labelRes = com.voicenotesai.R.string.nav_label_settings,
                 icon = Icons.Default.Settings,
-                contentDescription = "Open settings"
+                contentDescriptionRes = com.voicenotesai.R.string.open_settings_nav
             )
         )
     }
@@ -172,6 +175,7 @@ private fun AdaptiveNavigationRail(
             Spacer(modifier = Modifier.height(Spacing.large))
             
             destinations.forEach { destination ->
+                val navContentDesc = stringResource(id = destination.contentDescriptionRes)
                 NavigationRailItem(
                     selected = currentRoute.startsWith(destination.route),
                     onClick = {
@@ -186,12 +190,13 @@ private fun AdaptiveNavigationRail(
                     },
                     label = {
                         Text(
-                            text = destination.label,
+                            text = stringResource(id = destination.labelRes),
                             style = MaterialTheme.typography.labelSmall
                         )
                     },
                     modifier = Modifier.semantics {
-                        contentDescription = destination.contentDescription
+                        // Use precomputed description
+                        contentDescription = navContentDesc
                     }
                 )
             }
@@ -222,6 +227,7 @@ private fun AdaptiveBottomNavigation(
             tonalElevation = 3.dp
         ) {
             destinations.forEach { destination ->
+                val navContentDesc = stringResource(id = destination.contentDescriptionRes)
                 NavigationBarItem(
                     selected = currentRoute.startsWith(destination.route),
                     onClick = {
@@ -236,12 +242,12 @@ private fun AdaptiveBottomNavigation(
                     },
                     label = {
                         Text(
-                            text = destination.label,
+                            text = stringResource(id = destination.labelRes),
                             style = MaterialTheme.typography.labelMedium
                         )
                     },
                     modifier = Modifier.semantics {
-                        contentDescription = destination.contentDescription
+                        contentDescription = navContentDesc
                     }
                 )
             }

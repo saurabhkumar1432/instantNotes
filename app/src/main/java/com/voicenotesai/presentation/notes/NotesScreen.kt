@@ -51,6 +51,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -62,7 +63,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.voicenotesai.data.local.entity.Note
-import com.voicenotesai.domain.model.toUserMessage
+import com.voicenotesai.presentation.components.toLocalizedMessage
 // import com.voicenotesai.presentation.notes.components.BatchDeleteDialog
 // import com.voicenotesai.presentation.notes.components.EmptySearchState
 // import com.voicenotesai.presentation.notes.components.NotesExportDialog
@@ -99,11 +100,11 @@ fun NotesScreen(
                 title = {
                     Column(verticalArrangement = Arrangement.spacedBy(Spacing.extraSmall)) {
                         Text(
-                            text = "Notes",
+                            text = stringResource(id = com.voicenotesai.R.string.notes_title),
                             style = MaterialTheme.typography.titleLarge
                         )
                         Text(
-                            text = "Review and manage every transcript you've captured.",
+                            text = stringResource(id = com.voicenotesai.R.string.notes_description),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.65f)
                         )
@@ -114,13 +115,14 @@ fun NotesScreen(
                     titleContentColor = MaterialTheme.colorScheme.onBackground
                 ),
                 navigationIcon = {
+                    val notesGoBackDesc = stringResource(id = com.voicenotesai.R.string.notes_go_back_desc)
                     IconButton(
                         onClick = {
                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                             onNavigateBack()
                         },
                         modifier = Modifier.semantics {
-                            contentDescription = "Go back to recording screen"
+                            contentDescription = notesGoBackDesc
                         }
                     ) {
                         Icon(
@@ -190,16 +192,23 @@ fun NotesScreen(
                         }
                     }
                     is NotesUiState.Error -> {
+                        // Precompute localized message and retry label in composable scope so they can be
+                        // referenced from the LaunchedEffect (which is not a composable lambda).
+                        val localized = state.error.toLocalizedMessage()
+                        val message = stringResource(id = localized.resId, *localized.args)
+                        val retryLabel = stringResource(id = com.voicenotesai.R.string.retry)
+
                         LaunchedEffect(state.error) {
                             val result = snackbarHostState.showSnackbar(
-                                message = state.error.toUserMessage(),
-                                actionLabel = "Retry",
+                                message = message,
+                                actionLabel = retryLabel,
                                 duration = SnackbarDuration.Long
                             )
                             if (result == SnackbarResult.ActionPerformed) {
                                 viewModel.clearError()
                             }
                         }
+
                         EmptyState(modifier = Modifier.align(Alignment.Center))
                     }
                 }
@@ -208,12 +217,15 @@ fun NotesScreen(
 
         noteToDelete?.let { note ->
             DeleteConfirmationDialog(
+                title = stringResource(id = com.voicenotesai.R.string.delete_note_permanently_title),
+                text = stringResource(id = com.voicenotesai.R.string.delete_note_permanently_text),
+                confirmText = stringResource(id = com.voicenotesai.R.string.delete_note_button),
                 onConfirm = {
                     viewModel.deleteNote(note.id)
                     noteToDelete = null
                 },
-				onDismiss = { noteToDelete = null }
-			)
+                onDismiss = { noteToDelete = null }
+            )
         }
         }
     }
@@ -245,12 +257,12 @@ private fun NotesList(
                     verticalArrangement = Arrangement.spacedBy(Spacing.small)
                 ) {
                     Text(
-                        text = "Everything in one place",
+                        text = stringResource(id = com.voicenotesai.R.string.notes_everything),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.SemiBold
                     )
                     Text(
-                        text = "Use search to jump back to a conversation or open a note to review the full transcript.",
+                        text = stringResource(id = com.voicenotesai.R.string.notes_search_desc),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -278,6 +290,7 @@ private fun NoteCard(
     val haptic = LocalHapticFeedback.current
     val timestamp = SimpleDateFormat("MMM d, h:mm a", Locale.getDefault()).format(Date(note.timestamp))
     val preview = note.content.take(150).replace("\n", " ")
+    val noteCardDesc = stringResource(id = com.voicenotesai.R.string.note_card_desc_format, timestamp, preview)
     Card(
         onClick = {
             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
@@ -285,10 +298,10 @@ private fun NoteCard(
         },
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        modifier = Modifier
+            modifier = Modifier
             .fillMaxWidth()
             .semantics {
-                contentDescription = "Note from $timestamp. Preview: $preview"
+                contentDescription = noteCardDesc
             }
     ) {
         Column(
@@ -313,6 +326,8 @@ private fun NoteCard(
                     )
                 }
 
+                val deleteNoteDesc = stringResource(id = com.voicenotesai.R.string.delete_note_desc_format, timestamp)
+
                 FilledTonalIconButton(
                     onClick = {
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -321,7 +336,7 @@ private fun NoteCard(
                     modifier = Modifier
                         .size(42.dp)
                         .semantics {
-                            contentDescription = "Delete note from $timestamp"
+                            contentDescription = deleteNoteDesc
                         },
                     colors = IconButtonDefaults.filledTonalIconButtonColors(
                         containerColor = MaterialTheme.colorScheme.errorContainer,
@@ -372,12 +387,12 @@ private fun EmptySearchState(
             verticalArrangement = Arrangement.spacedBy(Spacing.medium)
         ) {
             Text(
-                text = "🔍 No matches found",
+                text = stringResource(id = com.voicenotesai.R.string.no_matches_found),
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.ExtraBold
             )
             Text(
-                text = "No notes found for \"$searchQuery\". Try different keywords or clear the search.",
+                text = stringResource(id = com.voicenotesai.R.string.empty_search_message, searchQuery),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
@@ -385,7 +400,7 @@ private fun EmptySearchState(
             )
             
             TextButton(onClick = onClearSearch) {
-                Text("Clear search")
+                Text(stringResource(id = com.voicenotesai.R.string.clear_search))
             }
         }
     }
@@ -422,24 +437,27 @@ private fun EmptyState(modifier: Modifier = Modifier) {
 
 @Composable
 private fun DeleteConfirmationDialog(
+    title: String? = null,
+    text: String? = null,
+    confirmText: String? = null,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Delete note permanently?") },
-        text = { Text("This will permanently remove the note. This action cannot be undone.") },
+        title = { Text(title ?: stringResource(id = com.voicenotesai.R.string.delete_note_permanently_title)) },
+        text = { Text(text ?: stringResource(id = com.voicenotesai.R.string.delete_note_permanently_text)) },
         confirmButton = {
             TextButton(
                 onClick = onConfirm,
                 colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
             ) {
-                Text("Delete note")
+                Text(confirmText ?: stringResource(id = com.voicenotesai.R.string.delete_note_button))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(id = com.voicenotesai.R.string.cancel))
             }
         }
     )

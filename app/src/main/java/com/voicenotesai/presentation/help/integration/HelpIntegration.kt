@@ -19,6 +19,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.res.stringResource
 import com.voicenotesai.presentation.help.HelpManager
 import com.voicenotesai.presentation.help.HelpPreferences
 import com.voicenotesai.presentation.help.HelpState
@@ -110,8 +111,8 @@ fun HelpEnabledScreen(
             when (helpKey) {
                 "main_screen" -> {
                     QuickTip(
-                        title = "Pro Tip",
-                        description = "Speak clearly and naturally. The AI works best with conversational speech.",
+                        titleRes = com.voicenotesai.R.string.help_pro_tip_title,
+                        descriptionRes = com.voicenotesai.R.string.help_pro_tip_desc,
                         isVisible = true,
                         onDismiss = { 
                             quickTipsDismissed = true
@@ -124,8 +125,8 @@ fun HelpEnabledScreen(
                 }
                 "notes_screen" -> {
                     QuickTip(
-                        title = "Search Everything",
-                        description = "Use the search bar to find notes by content or transcribed text.",
+                        titleRes = com.voicenotesai.R.string.help_search_everything_title,
+                        descriptionRes = com.voicenotesai.R.string.help_search_everything_desc,
                         isVisible = true,
                         onDismiss = { 
                             quickTipsDismissed = true
@@ -138,8 +139,8 @@ fun HelpEnabledScreen(
                 }
                 "settings_screen" -> {
                     QuickTip(
-                        title = "Validate Settings",
-                        description = "Always test your API settings before recording to ensure everything works properly.",
+                        titleRes = com.voicenotesai.R.string.help_validate_settings_title,
+                        descriptionRes = com.voicenotesai.R.string.help_validate_settings_desc,
                         isVisible = true,
                         onDismiss = { 
                             quickTipsDismissed = true
@@ -167,13 +168,15 @@ fun Modifier.helpTarget(
 ): Modifier {
     var targetBounds by remember { mutableStateOf<Rect?>(null) }
     
+    val tooltipDesc = tooltip ?: stringResource(id = com.voicenotesai.R.string.help_target_format, key)
+
     return this
         .onGloballyPositioned { coordinates ->
             targetBounds = coordinates.boundsInWindow()
         }
         .semantics {
             // Add semantic information for accessibility
-            contentDescription = tooltip ?: "Help target: $key"
+            contentDescription = tooltipDesc
         }
         .then(
             if (helpState != null && tooltip != null) {
@@ -201,6 +204,7 @@ fun SmartHelpProvider(
     var lastInteractionTime by remember { mutableStateOf(System.currentTimeMillis()) }
     
     // Monitor user idle time
+    val context = LocalContext.current
     LaunchedEffect(Unit) {
         while (true) {
             delay(1000)
@@ -212,22 +216,22 @@ fun SmartHelpProvider(
                 when (screenKey) {
                     "main_screen" -> {
                         helpState.showTooltip(
-                            title = "Ready to record?",
-                            description = "Tap the microphone button to start capturing your thoughts. The AI will enhance them automatically.",
+                            title = context.getString(com.voicenotesai.R.string.help_ready_record_title),
+                            description = context.getString(com.voicenotesai.R.string.help_ready_record_desc),
                             position = TooltipPosition.Center
                         )
                     }
                     "notes_screen" -> {
                         helpState.showTooltip(
-                            title = "Browse your notes",
-                            description = "Tap any note to view its full content, or use the search bar to find specific information.",
+                            title = context.getString(com.voicenotesai.R.string.help_browse_notes_title),
+                            description = context.getString(com.voicenotesai.R.string.help_browse_notes_desc),
                             position = TooltipPosition.Center
                         )
                     }
                     "settings_screen" -> {
                         helpState.showTooltip(
-                            title = "Configure your AI",
-                            description = "Enter your OpenAI API key and select a model to get started with AI-enhanced notes.",
+                            title = context.getString(com.voicenotesai.R.string.help_configure_ai_title),
+                            description = context.getString(com.voicenotesai.R.string.help_configure_ai_desc),
                             position = TooltipPosition.Center
                         )
                     }

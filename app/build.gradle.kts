@@ -5,6 +5,95 @@ plugins {
     id("com.google.devtools.ksp")
 }
 
+// Validate there are no hard-coded UI strings in Compose code (simple static check)
+tasks.register("validateNoHardcodedUiStrings") {
+    group = "verification"
+    description = "Fails the build if UI code contains hard-coded string literals instead of string resources"
+
+    doLast {
+        val srcDirs = listOf(
+            file("src/main/java"),
+            file("src/main/kotlin")
+        ).filter { it.exists() }
+
+        val textLiteralRegex = Regex("\\bText\\s*\\(\\s*\"")
+        val contentDescRegex = Regex("contentDescription\\s*=\\s*\"")
+        val matches = mutableListOf<String>()
+
+        srcDirs.forEach { dir ->
+            dir.walkTopDown().filter { it.isFile && it.extension == "kt" }.forEach { file ->
+                val lines = file.readLines()
+                lines.forEachIndexed { idx, line ->
+                    if (textLiteralRegex.containsMatchIn(line) || contentDescRegex.containsMatchIn(line)) {
+                        // allowlines that call stringResource or R.string explicitly
+                        if (!line.contains("stringResource(") && !line.contains("R.string") && !line.contains("""""")) {
+                            matches.add("${file.relativeTo(project.rootDir)}:${idx + 1}: $line")
+                        }
+                    }
+                }
+            }
+        }
+
+        if (matches.isNotEmpty()) {
+            println("\nHard-coded UI strings found (use string resources for all UI text):")
+            matches.forEach { println(it) }
+            throw org.gradle.api.GradleException("Found ${matches.size} hard-coded UI string(s). Use string resources instead.")
+        } else {
+            println("validateNoHardcodedUiStrings: no issues found")
+        }
+    }
+}
+
+// Ensure the validation runs on check
+tasks.named("check") {
+    dependsOn("validateNoHardcodedUiStrings")
+}
+
+// Detect accidental usage of @Composable APIs (stringResource) inside non-composable lambdas
+tasks.register("detectStringResourceInNonComposable") {
+    group = "verification"
+    description = "Scans Kotlin files for stringResource() usages inside non-composable lambdas (semantics/LaunchedEffect) and fails the build if any are found."
+
+    doLast {
+        val srcDirs = listOf(file("src/main/java"), file("src/main/kotlin")).filter { it.exists() }
+        val problemPatterns = listOf(
+            Regex("(?s)semantics\\s*\\{[^}]*stringResource\\("),
+            Regex("(?s)clearAndSetSemantics\\s*\\{[^}]*stringResource\\("),
+            Regex("(?s)LaunchedEffect\\([^)]*\\)\\s*\\{[^}]*stringResource\\(")
+        )
+
+        val matches = mutableListOf<String>()
+
+        srcDirs.forEach { dir ->
+            dir.walkTopDown().filter { it.isFile && it.extension == "kt" }.forEach { file ->
+                val text = file.readText()
+                problemPatterns.forEach { pattern ->
+                    val result = pattern.findAll(text)
+                    result.forEach { match ->
+                        // Calculate line number of match start
+                        val prefix = text.substring(0, match.range.first)
+                        val lineNumber = prefix.count { it == '\n' } + 1
+                        matches.add("${file.relativeTo(project.rootDir)}:$lineNumber: ${match.value.trim().lines().firstOrNull()?:(match.value.take(80))}")
+                    }
+                }
+            }
+        }
+
+        if (matches.isNotEmpty()) {
+            println("\nFound stringResource() used inside non-composable lambdas (this can cause '@Composable invocations can only happen from the context of a @Composable function' errors):")
+            matches.forEach { println(it) }
+            throw org.gradle.api.GradleException("${matches.size} invalid stringResource() usage(s) detected. Precompute strings in composable scope and reference them from non-composable lambdas.")
+        } else {
+            println("detectStringResourceInNonComposable: no issues found")
+        }
+    }
+}
+
+// Ensure this check runs as part of the verification lifecycle
+tasks.named("check") {
+    dependsOn("detectStringResourceInNonComposable")
+}
+
 android {
     namespace = "com.voicenotesai"
     compileSdk = 34

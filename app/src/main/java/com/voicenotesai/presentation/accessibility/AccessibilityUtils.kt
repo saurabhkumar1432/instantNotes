@@ -8,6 +8,7 @@ import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -84,15 +85,15 @@ fun Modifier.recordingAccessibility(
     duration: Long = 0L
 ): Modifier {
     val contentDesc = if (isRecording) {
-        "Stop recording. Currently recording for ${formatDurationForAccessibility(duration)}"
+        stringResource(id = com.voicenotesai.R.string.recording_stop_desc, formatDurationForAccessibility(duration))
     } else {
-        "Start voice recording"
+        stringResource(id = com.voicenotesai.R.string.start_voice_recording)
     }
-    
+
     val stateDesc = if (isRecording) {
-        "Recording in progress"
+        stringResource(id = com.voicenotesai.R.string.recording_in_progress)
     } else {
-        "Ready to record"
+        stringResource(id = com.voicenotesai.R.string.ready_to_record)
     }
     
     return this.semantics {
@@ -103,17 +104,18 @@ fun Modifier.recordingAccessibility(
 }
 
 /**
- * Format duration for accessibility announcement
+ * Format duration for accessibility announcement using localized strings.
  */
+@Composable
 private fun formatDurationForAccessibility(milliseconds: Long): String {
     val totalSeconds = milliseconds / 1000
     val minutes = totalSeconds / 60
     val seconds = totalSeconds % 60
-    
+
     return when {
-        minutes > 0 -> "$minutes minutes and $seconds seconds"
-        seconds > 0 -> "$seconds seconds"
-        else -> "less than a second"
+        minutes > 0 -> stringResource(id = com.voicenotesai.R.string.duration_minutes_seconds_format, minutes, seconds)
+        seconds > 0 -> stringResource(id = com.voicenotesai.R.string.duration_seconds_format, seconds)
+        else -> stringResource(id = com.voicenotesai.R.string.less_than_a_second)
     }
 }
 
@@ -126,7 +128,7 @@ fun Modifier.noteItemAccessibility(
     content: String
 ): Modifier {
     val preview = content.take(100).replace("\n", " ")
-    val contentDesc = "Note from $timestamp. Content: $preview"
+    val contentDesc = stringResource(id = com.voicenotesai.R.string.note_card_desc_format, timestamp, preview)
     
     return this.semantics {
         contentDescription = contentDesc
@@ -144,10 +146,10 @@ fun Modifier.settingsFieldAccessibility(
     isRequired: Boolean = false
 ): Modifier {
     val statusDesc = when {
-        !isValid -> "Invalid input"
-        isRequired && value.isBlank() -> "Required field, not filled"
-        value.isNotBlank() -> "Field completed"
-        else -> "Field empty"
+        !isValid -> stringResource(id = com.voicenotesai.R.string.invalid_input)
+        isRequired && value.isBlank() -> stringResource(id = com.voicenotesai.R.string.required_field_not_filled)
+        value.isNotBlank() -> stringResource(id = com.voicenotesai.R.string.field_completed)
+        else -> stringResource(id = com.voicenotesai.R.string.field_empty)
     }
     
     return this.semantics {

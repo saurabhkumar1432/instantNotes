@@ -59,6 +59,11 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.res.stringResource
+import androidx.annotation.StringRes
+import androidx.compose.ui.semantics.progressBarRangeInfo
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
@@ -68,6 +73,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.voicenotesai.presentation.animations.bouncyClickable
 import com.voicenotesai.presentation.animations.pulseAnimation
+import com.voicenotesai.presentation.animations.AnimationSpecs
 import com.voicenotesai.presentation.theme.ExtendedTypography
 import com.voicenotesai.presentation.theme.Spacing
 import kotlinx.coroutines.delay
@@ -106,9 +112,9 @@ fun EnhancedRecordButton(
         animationSpec = infiniteRepeatable(
             animation = tween(
                 durationMillis = when (recordingState) {
-                    RecordingButtonState.Recording -> 800
-                    RecordingButtonState.Processing -> 1200
-                    else -> 2000
+                    RecordingButtonState.Recording -> AnimationSpecs.RECORDING_PULSE
+                    RecordingButtonState.Processing -> AnimationSpecs.PROCESSING_PULSE
+                    else -> AnimationSpecs.IDLE_PULSE
                 },
                 easing = FastOutSlowInEasing
             ),
@@ -127,9 +133,9 @@ fun EnhancedRecordButton(
         animationSpec = infiniteRepeatable(
             animation = tween(
                 durationMillis = when (recordingState) {
-                    RecordingButtonState.Recording -> 1200
-                    RecordingButtonState.Processing -> 1600
-                    else -> 2400
+                    RecordingButtonState.Recording -> AnimationSpecs.RECORDING_PULSE
+                    RecordingButtonState.Processing -> AnimationSpecs.PROCESSING_PULSE
+                    else -> AnimationSpecs.IDLE_PULSE
                 },
                 easing = LinearEasing
             ),
@@ -148,9 +154,9 @@ fun EnhancedRecordButton(
         animationSpec = infiniteRepeatable(
             animation = tween(
                 durationMillis = when (recordingState) {
-                    RecordingButtonState.Recording -> 1200
-                    RecordingButtonState.Processing -> 1600
-                    else -> 2400
+                    RecordingButtonState.Recording -> AnimationSpecs.RECORDING_PULSE
+                    RecordingButtonState.Processing -> AnimationSpecs.PROCESSING_PULSE
+                    else -> AnimationSpecs.IDLE_PULSE
                 },
                 easing = FastOutSlowInEasing
             ),
@@ -167,7 +173,7 @@ fun EnhancedRecordButton(
             RecordingButtonState.Paused -> MaterialTheme.colorScheme.secondary
             RecordingButtonState.Processing -> MaterialTheme.colorScheme.tertiary
         },
-        animationSpec = tween(300),
+    animationSpec = AnimationSpecs.shortColorTween(),
         label = "button-color"
     )
 
@@ -178,7 +184,7 @@ fun EnhancedRecordButton(
             RecordingButtonState.Paused -> Color.White
             RecordingButtonState.Processing -> Color.White
         },
-        animationSpec = tween(300),
+    animationSpec = AnimationSpecs.shortColorTween(),
         label = "icon-color"
     )
 
@@ -196,7 +202,7 @@ fun EnhancedRecordButton(
                     enabled = recordingState != RecordingButtonState.Idle,
                     minScale = 0.96f,
                     maxScale = 1.04f,
-                    duration = 1000
+                    duration = AnimationSpecs.MEDIUM * 3
                 )
         ) {
             // Animated ripple effects
@@ -219,6 +225,20 @@ fun EnhancedRecordButton(
             }
 
             // Main button
+            val buttonContentDesc = when (recordingState) {
+                RecordingButtonState.Idle -> stringResource(id = com.voicenotesai.R.string.start_voice_recording_description)
+                RecordingButtonState.Recording -> stringResource(id = com.voicenotesai.R.string.recording_stop_desc, formatDurationForAccessibility(duration))
+                RecordingButtonState.Paused -> stringResource(id = com.voicenotesai.R.string.recording_resume_desc, formatDurationForAccessibility(duration))
+                RecordingButtonState.Processing -> stringResource(id = com.voicenotesai.R.string.processing_recording_desc)
+            }
+
+            val buttonStateDesc = when (recordingState) {
+                RecordingButtonState.Idle -> stringResource(id = com.voicenotesai.R.string.recording_state_ready)
+                RecordingButtonState.Recording -> stringResource(id = com.voicenotesai.R.string.recording_state_recording)
+                RecordingButtonState.Paused -> stringResource(id = com.voicenotesai.R.string.recording_state_paused)
+                RecordingButtonState.Processing -> stringResource(id = com.voicenotesai.R.string.processing_recording_desc)
+            }
+
             FilledIconButton(
                 onClick = {
                     haptic.performHapticFeedback(
@@ -243,18 +263,8 @@ fun EnhancedRecordButton(
                     .scale(animatedScale)
                     .clearAndSetSemantics {
                         role = Role.Button
-                        contentDescription = when (recordingState) {
-                            RecordingButtonState.Idle -> "Start voice recording"
-                            RecordingButtonState.Recording -> "Stop recording. Currently recording for ${formatDurationForAccessibility(duration)}"
-                            RecordingButtonState.Paused -> "Resume recording. Paused at ${formatDurationForAccessibility(duration)}"
-                            RecordingButtonState.Processing -> "Processing recording. Please wait."
-                        }
-                        stateDescription = when (recordingState) {
-                            RecordingButtonState.Idle -> "Ready to record"
-                            RecordingButtonState.Recording -> "Recording in progress"
-                            RecordingButtonState.Paused -> "Recording paused"
-                            RecordingButtonState.Processing -> "Processing audio"
-                        }
+                        contentDescription = buttonContentDesc
+                        stateDescription = buttonStateDesc
                     },
                 colors = IconButtonDefaults.filledIconButtonColors(
                     containerColor = buttonColor,
@@ -265,8 +275,8 @@ fun EnhancedRecordButton(
                 AnimatedContent(
                     targetState = recordingState,
                     transitionSpec = {
-                        scaleIn(tween(200)) + fadeIn(tween(200)) togetherWith
-                                scaleOut(tween(200)) + fadeOut(tween(200))
+            scaleIn(AnimationSpecs.shortTween()) + fadeIn(AnimationSpecs.shortTween()) togetherWith
+                scaleOut(AnimationSpecs.shortTween()) + fadeOut(AnimationSpecs.shortTween())
                     },
                     label = "button-icon-transition"
                 ) { state ->
@@ -302,10 +312,10 @@ fun EnhancedRecordButton(
         // Duration display
         AnimatedContent(
             targetState = recordingState,
-            transitionSpec = {
-                fadeIn(tween(300)) + scaleIn(tween(300)) togetherWith
-                        fadeOut(tween(300)) + scaleOut(tween(300))
-            },
+        transitionSpec = {
+        fadeIn(AnimationSpecs.shortTween()) + scaleIn(AnimationSpecs.shortTween()) togetherWith
+            fadeOut(AnimationSpecs.shortTween()) + scaleOut(AnimationSpecs.shortTween())
+        },
             label = "duration-transition"
         ) { state ->
             when (state) {
@@ -324,8 +334,8 @@ fun EnhancedRecordButton(
                         
                         Text(
                             text = when (state) {
-                                RecordingButtonState.Recording -> "Recording in progress"
-                                RecordingButtonState.Paused -> "Recording paused"
+                                RecordingButtonState.Recording -> stringResource(id = com.voicenotesai.R.string.recording_state_recording)
+                                RecordingButtonState.Paused -> stringResource(id = com.voicenotesai.R.string.recording_state_paused)
                                 else -> ""
                             },
                             style = MaterialTheme.typography.bodyMedium,
@@ -337,8 +347,8 @@ fun EnhancedRecordButton(
                 else -> {
                     Text(
                         text = when (state) {
-                            RecordingButtonState.Idle -> "Tap to record"
-                            RecordingButtonState.Processing -> "Transcribing and structuring"
+                            RecordingButtonState.Idle -> stringResource(id = com.voicenotesai.R.string.tap_to_record_text)
+                            RecordingButtonState.Processing -> stringResource(id = com.voicenotesai.R.string.transcribing_text)
                             else -> ""
                         },
                         style = MaterialTheme.typography.bodyLarge,
@@ -398,8 +408,16 @@ fun EnhancedWaveformIndicator(
         )
     }
 
+    val audioLevelDesc = stringResource(id = com.voicenotesai.R.string.audio_level)
+
     Row(
-        modifier = modifier.height(120.dp),
+        modifier = modifier
+            .height(120.dp)
+            .semantics {
+                contentDescription = audioLevelDesc
+                // Expose approximate audio intensity (0..1) as a progress for assistive tech
+                progressBarRangeInfo = ProgressBarRangeInfo(intensity, 0f..1f)
+            },
         horizontalArrangement = Arrangement.spacedBy(Spacing.extraSmall, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -438,7 +456,7 @@ fun RecordingQualityIndicator(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = "Audio Quality:",
+            text = stringResource(id = com.voicenotesai.R.string.audio_quality_label),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -451,12 +469,12 @@ fun RecordingQualityIndicator(
                     enabled = quality == RecordingQuality.Poor,
                     minScale = 0.8f,
                     maxScale = 1.2f,
-                    duration = 800
+                    duration = AnimationSpecs.MEDIUM * 2
                 )
         )
         
         Text(
-            text = quality.displayName,
+            text = stringResource(id = quality.displayNameRes),
             style = MaterialTheme.typography.bodySmall,
             color = color,
             fontWeight = FontWeight.Medium
@@ -480,15 +498,19 @@ fun SmartRetryButton(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(Spacing.small)
     ) {
-        FilledIconButton(
+            val actionDesc = stringResource(id = retryType.actionDescriptionRes)
+            val retryContentDesc = stringResource(id = com.voicenotesai.R.string.retry_action_format, actionDesc)
+            val retryLabel = stringResource(id = retryType.displayTextRes)
+
+            FilledIconButton(
             onClick = {
                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                 onRetry()
             },
-            modifier = Modifier
+                modifier = Modifier
                 .clearAndSetSemantics {
                     role = Role.Button
-                    contentDescription = "Retry ${retryType.actionDescription}"
+                    contentDescription = retryContentDesc
                 },
             colors = IconButtonDefaults.filledIconButtonColors(
                 containerColor = MaterialTheme.colorScheme.primary
@@ -502,7 +524,7 @@ fun SmartRetryButton(
         }
         
         Text(
-            text = retryType.displayText,
+            text = retryLabel,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
@@ -518,21 +540,22 @@ enum class RecordingButtonState {
     Processing
 }
 
-enum class RecordingQuality(val displayName: String) {
-    Poor("Poor"),
-    Fair("Fair"), 
-    Good("Good"),
-    Excellent("Excellent")
+
+enum class RecordingQuality(@StringRes val displayNameRes: Int) {
+    Poor(com.voicenotesai.R.string.quality_poor),
+    Fair(com.voicenotesai.R.string.quality_fair),
+    Good(com.voicenotesai.R.string.quality_good),
+    Excellent(com.voicenotesai.R.string.quality_excellent)
 }
 
 enum class RetryType(
-    val displayText: String,
-    val actionDescription: String,
+    @StringRes val displayTextRes: Int,
+    @StringRes val actionDescriptionRes: Int,
     val icon: ImageVector
 ) {
-    RecordAgain("Try Recording Again", "recording", Icons.Filled.Refresh),
-    CheckMicrophone("Check Microphone", "microphone check", Icons.Filled.Warning),
-    CheckConnection("Check Connection", "connection check", Icons.Filled.Warning)
+    RecordAgain(com.voicenotesai.R.string.retry_record_again, com.voicenotesai.R.string.retry_action_recording, Icons.Filled.Refresh),
+    CheckMicrophone(com.voicenotesai.R.string.retry_check_microphone, com.voicenotesai.R.string.retry_action_microphone, Icons.Filled.Warning),
+    CheckConnection(com.voicenotesai.R.string.retry_check_connection, com.voicenotesai.R.string.retry_action_connection, Icons.Filled.Warning)
 }
 
 // Helper functions

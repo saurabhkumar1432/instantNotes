@@ -46,6 +46,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.res.stringResource
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -61,7 +62,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.voicenotesai.data.model.AIProvider
-import com.voicenotesai.domain.model.toUserMessage
+import com.voicenotesai.presentation.components.toLocalizedMessage
 import com.voicenotesai.presentation.theme.Spacing
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -75,18 +76,22 @@ fun SettingsScreen(
 	var expanded by remember { mutableStateOf(false) }
 	val snackbarHostState = remember { SnackbarHostState() }
 
+	// Precompute strings used from within LaunchedEffect coroutines
+	val settingsSavedMsg = stringResource(id = com.voicenotesai.R.string.settings_saved)
 	LaunchedEffect(uiState.isSaved) {
 		if (uiState.isSaved) {
-			snackbarHostState.showSnackbar("Settings saved successfully!")
+			snackbarHostState.showSnackbar(settingsSavedMsg)
 			kotlinx.coroutines.delay(2000)
 			viewModel.clearSavedState()
 		}
 	}
 
+	val localizedError = uiState.error?.toLocalizedMessage()
+	val settingsErrorMsg = localizedError?.let { stringResource(id = it.resId, *it.args) }
 	LaunchedEffect(uiState.error) {
-		uiState.error?.let { error ->
+		uiState.error?.let {
 			snackbarHostState.showSnackbar(
-				message = error.toUserMessage(),
+				message = settingsErrorMsg ?: "",
 				duration = SnackbarDuration.Long
 			)
 			viewModel.clearError()
@@ -100,11 +105,11 @@ fun SettingsScreen(
 				title = {
 					Column(verticalArrangement = Arrangement.spacedBy(Spacing.extraSmall)) {
 						Text(
-							text = "AI provider settings",
+							text = stringResource(id = com.voicenotesai.R.string.settings_ai_provider_title),
 							style = MaterialTheme.typography.titleLarge
 						)
 						Text(
-							text = "Connect your AI provider so Instant Notes can generate structured summaries.",
+							text = stringResource(id = com.voicenotesai.R.string.settings_ai_provider_desc),
 							style = MaterialTheme.typography.bodySmall,
 							color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.65f)
 						)
@@ -114,15 +119,10 @@ fun SettingsScreen(
 					IconButton(onClick = onNavigateBack) {
 						Icon(
 							imageVector = Icons.Default.ArrowBack,
-							contentDescription = "Back"
+							contentDescription = stringResource(id = com.voicenotesai.R.string.go_back_description)
 						)
 					}
-				},
-				colors = TopAppBarDefaults.topAppBarColors(
-					containerColor = Color.Transparent,
-					titleContentColor = MaterialTheme.colorScheme.onBackground,
-					navigationIconContentColor = MaterialTheme.colorScheme.onBackground
-				)
+				}
 			)
 		},
 		snackbarHost = { SnackbarHost(snackbarHostState) }
@@ -136,8 +136,8 @@ fun SettingsScreen(
 			verticalArrangement = Arrangement.spacedBy(Spacing.large)
 		) {
 			SettingsSection(
-				title = "Connection",
-				description = "Select your AI provider and authenticate with your API key."
+				title = stringResource(id = com.voicenotesai.R.string.settings_connection_title),
+				description = stringResource(id = com.voicenotesai.R.string.settings_connection_desc)
 			) {
 				ExposedDropdownMenuBox(
 					expanded = expanded,
@@ -147,7 +147,7 @@ fun SettingsScreen(
 						value = uiState.provider.name.replace("_", " "),
 						onValueChange = {},
 						readOnly = true,
-						label = { Text("AI provider") },
+						label = { Text(stringResource(id = com.voicenotesai.R.string.ai_provider_label)) },
 						trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
 						modifier = Modifier
 							.fillMaxWidth()
@@ -175,12 +175,12 @@ fun SettingsScreen(
 				OutlinedTextField(
 					value = uiState.apiKey,
 					onValueChange = { viewModel.onApiKeyChanged(it) },
-					label = { Text("API key") },
-					placeholder = { Text("Paste the secret from your provider console") },
+					label = { Text(stringResource(id = com.voicenotesai.R.string.api_key_label)) },
+					placeholder = { Text(stringResource(id = com.voicenotesai.R.string.api_key_placeholder)) },
 					visualTransformation = if (showApiKey) VisualTransformation.None else PasswordVisualTransformation(),
 					trailingIcon = {
 						TextButton(onClick = { showApiKey = !showApiKey }) {
-							Text(if (showApiKey) "Hide" else "Show")
+							Text(if (showApiKey) stringResource(id = com.voicenotesai.R.string.hide) else stringResource(id = com.voicenotesai.R.string.show))
 						}
 					},
 					keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
@@ -192,8 +192,8 @@ fun SettingsScreen(
 				OutlinedTextField(
 					value = uiState.model,
 					onValueChange = { viewModel.onModelChanged(it) },
-					label = { Text("Model name") },
-					placeholder = { Text("Example: gpt-4o, claude-3-opus-20240229") },
+					label = { Text(stringResource(id = com.voicenotesai.R.string.model_name_label)) },
+					placeholder = { Text(stringResource(id = com.voicenotesai.R.string.model_placeholder)) },
 					modifier = Modifier.fillMaxWidth(),
 					singleLine = true,
 					colors = TextFieldDefaults.outlinedTextFieldColors(containerColor = Color.Transparent)
@@ -201,8 +201,8 @@ fun SettingsScreen(
 			}
 
 			SettingsSection(
-				title = "Model guidance",
-				description = "Use one of these production-tested model identifiers for the best transcription and summarization results."
+				title = stringResource(id = com.voicenotesai.R.string.why_we_validate),
+				description = stringResource(id = com.voicenotesai.R.string.api_validation_check_text)
 			) {
 				ModelRecommendations(provider = uiState.provider)
 			}
@@ -227,7 +227,7 @@ fun SettingsScreen(
 					)
 					Spacer(modifier = Modifier.width(Spacing.small))
 				}
-				Text("Validate credentials", fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodyLarge)
+				Text(stringResource(id = com.voicenotesai.R.string.validate_credentials), fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodyLarge)
 			}
 
 			Button(
@@ -244,7 +244,7 @@ fun SettingsScreen(
 					)
 					Spacer(modifier = Modifier.width(Spacing.small))
 				}
-				Text("Save configuration", fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodyLarge)
+				Text(stringResource(id = com.voicenotesai.R.string.save_configuration), fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodyLarge)
 			}
 
 			SettingsSection(
@@ -252,7 +252,7 @@ fun SettingsScreen(
 				description = "We run a quick request before recording so you never lose a note to invalid credentials."
 			) {
 				Text(
-					text = "The check confirms your API key and model are accessible. You can re-run validation any time after updating your provider settings.",
+					text = stringResource(id = com.voicenotesai.R.string.api_validation_check_text),
 					style = MaterialTheme.typography.bodyMedium,
 					color = MaterialTheme.colorScheme.onSurfaceVariant
 				)
@@ -266,7 +266,7 @@ fun SettingsScreen(
 					tonalElevation = 0.dp
 				) {
 					Text(
-						text = "Settings saved successfully.",
+						text = stringResource(id = com.voicenotesai.R.string.settings_saved),
 						style = MaterialTheme.typography.bodyMedium,
 						color = MaterialTheme.colorScheme.onPrimaryContainer,
 						modifier = Modifier.padding(Spacing.medium)

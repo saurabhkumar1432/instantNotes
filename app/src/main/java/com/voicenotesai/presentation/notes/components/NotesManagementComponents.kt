@@ -57,6 +57,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.res.stringResource
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -88,24 +89,25 @@ import com.voicenotesai.presentation.theme.Spacing
 fun NotesSearchBar(
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
-    placeholder: String = "Search notes...",
+    placeholderRes: Int = com.voicenotesai.R.string.search_placeholder,
     modifier: Modifier = Modifier
 ) {
     val haptic = LocalHapticFeedback.current
+    val searchBarDesc = stringResource(id = com.voicenotesai.R.string.search_bar_content_description)
     
     OutlinedTextField(
         value = searchQuery,
         onValueChange = onSearchQueryChange,
-        placeholder = { Text(placeholder) },
+    placeholder = { Text(stringResource(id = placeholderRes)) },
         leadingIcon = {
-            Icon(
-                imageVector = Icons.Default.Search,
-                contentDescription = "Search icon"
-            )
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = stringResource(id = com.voicenotesai.R.string.search_icon_description)
+                )
         },
         trailingIcon = {
             if (searchQuery.isNotEmpty()) {
-                IconButton(
+                    IconButton(
                     onClick = {
                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         onSearchQueryChange("")
@@ -113,7 +115,7 @@ fun NotesSearchBar(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Close,
-                        contentDescription = "Clear search"
+                        contentDescription = stringResource(id = com.voicenotesai.R.string.clear_search)
                     )
                 }
             }
@@ -128,7 +130,7 @@ fun NotesSearchBar(
         modifier = modifier
             .fillMaxWidth()
             .semantics {
-                contentDescription = "Search through your notes by content or transcribed text"
+                contentDescription = searchBarDesc
             }
     )
 }
@@ -149,25 +151,28 @@ fun NotesFilterRow(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(Spacing.small)
     ) {
-        items(NotesFilter.values()) { filter ->
-            FilterChip(
+                items(NotesFilter.values()) { filter ->
+                val label = stringResource(id = filter.displayNameRes)
+                val filterDesc = stringResource(id = com.voicenotesai.R.string.filter_notes_by_format, label)
+
+                FilterChip(
                 selected = selectedFilter == filter,
                 onClick = {
                     haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                     onFilterChange(filter)
                 },
-                label = { 
+                label = {
                     Text(
-                        text = filter.displayName,
+                        text = stringResource(id = filter.displayNameRes),
                         style = MaterialTheme.typography.labelMedium
-                    ) 
+                    )
                 },
                 colors = FilterChipDefaults.filterChipColors(
                     selectedContainerColor = MaterialTheme.colorScheme.primary,
                     selectedLabelColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 modifier = Modifier.semantics {
-                    contentDescription = "Filter notes by ${filter.displayName}"
+                    contentDescription = filterDesc
                 }
             )
         }
@@ -187,21 +192,24 @@ fun NotesSortDropdown(
     var expanded by remember { mutableStateOf(false) }
     val haptic = LocalHapticFeedback.current
 
-    ExposedDropdownMenuBox(
+        ExposedDropdownMenuBox(
         expanded = expanded,
         onExpandedChange = { expanded = !expanded },
         modifier = modifier
     ) {
-        OutlinedTextField(
-            value = selectedSort.displayName,
+            val selectedSortLabel = stringResource(id = selectedSort.displayNameRes)
+            val sortDesc = stringResource(id = com.voicenotesai.R.string.sort_by) + " " + selectedSortLabel
+
+            OutlinedTextField(
+            value = stringResource(id = selectedSort.displayNameRes),
             onValueChange = {},
             readOnly = true,
-            label = { Text("Sort by") },
+            label = { Text(stringResource(id = com.voicenotesai.R.string.sort_by)) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             modifier = Modifier
                 .menuAnchor()
                 .semantics {
-                    contentDescription = "Sort notes by ${selectedSort.displayName}"
+                    contentDescription = sortDesc
                 }
         )
 
@@ -211,7 +219,7 @@ fun NotesSortDropdown(
         ) {
             NotesSortType.values().forEach { sortType ->
                 DropdownMenuItem(
-                    text = { Text(sortType.displayName) },
+                    text = { Text(stringResource(id = sortType.displayNameRes)) },
                     onClick = {
                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         onSortChange(sortType)
@@ -278,7 +286,7 @@ fun NotesSelectionToolbar(
                     }
                     
                     Text(
-                        text = "$selectedCount of $totalCount selected",
+                        text = stringResource(id = com.voicenotesai.R.string.selected_of_total_format, selectedCount, totalCount),
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Medium
                     )
@@ -290,38 +298,43 @@ fun NotesSelectionToolbar(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     if (selectedCount < totalCount) {
+                        val selectAllDesc = stringResource(id = com.voicenotesai.R.string.select_all_desc)
                         TextButton(
                             onClick = {
                                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                 onSelectAll()
                             },
                             modifier = Modifier.semantics {
-                                contentDescription = "Select all notes"
+                                contentDescription = selectAllDesc
                             }
                         ) {
-                            Text("Select All")
+                            Text(stringResource(id = com.voicenotesai.R.string.select_all))
                         }
                     }
                     
+                    val deselectAllDesc = stringResource(id = com.voicenotesai.R.string.deselect_all_desc)
+
                     TextButton(
                         onClick = {
                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                             onDeselectAll()
                         },
-                        modifier = Modifier.semantics {
-                            contentDescription = "Deselect all notes"
-                        }
+                            modifier = Modifier.semantics {
+                                contentDescription = deselectAllDesc
+                            }
                     ) {
-                        Text("Deselect")
+                        Text(stringResource(id = com.voicenotesai.R.string.deselect))
                     }
                     
+                    val exportSelectedDesc = stringResource(id = com.voicenotesai.R.string.export_selected_desc)
+
                     IconButton(
                         onClick = {
                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                             onExport()
                         },
                         modifier = Modifier.semantics {
-                            contentDescription = "Export selected notes"
+                            contentDescription = exportSelectedDesc
                         }
                     ) {
                         Icon(
@@ -330,13 +343,15 @@ fun NotesSelectionToolbar(
                         )
                     }
                     
+                    val deleteSelectedDesc = stringResource(id = com.voicenotesai.R.string.delete_selected_desc)
+
                     IconButton(
                         onClick = {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             onDeleteSelected()
                         },
                         modifier = Modifier.semantics {
-                            contentDescription = "Delete selected notes"
+                            contentDescription = deleteSelectedDesc
                         }
                     ) {
                         Icon(
@@ -367,7 +382,7 @@ fun NotesExportDialog(
             onDismissRequest = onDismiss,
             title = {
                 Text(
-                    text = "Export Notes",
+                    text = stringResource(id = com.voicenotesai.R.string.export_notes_title),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.SemiBold
                 )
@@ -387,28 +402,28 @@ fun NotesExportDialog(
                             verticalArrangement = Arrangement.spacedBy(Spacing.small)
                         ) {
                             Text(
-                                text = "Export Statistics",
+                                text = stringResource(id = com.voicenotesai.R.string.export_statistics),
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.SemiBold
                             )
-                            Text(
-                                text = "📝 ${exportStats.noteCount} notes",
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                            Text(
-                                text = "📊 ${exportStats.totalWords} words",
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                            Text(
-                                text = "🔤 ${exportStats.totalCharacters} characters",
-                                style = MaterialTheme.typography.bodyMedium
-                            )
+                                Text(
+                                    text = stringResource(id = com.voicenotesai.R.string.export_stats_notes_count, exportStats.noteCount),
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                Text(
+                                    text = stringResource(id = com.voicenotesai.R.string.export_stats_words_count, exportStats.totalWords),
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                Text(
+                                    text = stringResource(id = com.voicenotesai.R.string.export_stats_chars_count, exportStats.totalCharacters),
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
                         }
                     }
                     
                     // Format selection
                     Text(
-                        text = "Choose Export Format:",
+                        text = stringResource(id = com.voicenotesai.R.string.choose_export_format),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Medium
                     )
@@ -431,7 +446,7 @@ fun NotesExportDialog(
             confirmButton = {},
             dismissButton = {
                 TextButton(onClick = onDismiss) {
-                    Text("Cancel")
+                    Text(stringResource(id = com.voicenotesai.R.string.cancel))
                 }
             },
             modifier = modifier
@@ -451,9 +466,9 @@ private fun ExportFormatOption(
     val haptic = LocalHapticFeedback.current
     
     val description = when (format) {
-        ExportFormat.TEXT -> "Simple text format, easy to read"
-        ExportFormat.MARKDOWN -> "Formatted text with headers"
-        ExportFormat.JSON -> "Structured data format"
+        ExportFormat.TEXT -> stringResource(id = com.voicenotesai.R.string.export_desc_text)
+        ExportFormat.MARKDOWN -> stringResource(id = com.voicenotesai.R.string.export_desc_markdown)
+        ExportFormat.JSON -> stringResource(id = com.voicenotesai.R.string.export_desc_json)
     }
     
     Card(
@@ -479,7 +494,7 @@ private fun ExportFormatOption(
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    text = format.displayName,
+                    text = stringResource(id = format.displayNameRes),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Medium
                 )
@@ -533,13 +548,13 @@ fun BatchDeleteDialog(
             },
             title = {
                 Text(
-                    text = "Delete ${noteCount} Notes?",
+                    text = stringResource(id = com.voicenotesai.R.string.delete_notes_count_title, noteCount),
                     style = MaterialTheme.typography.headlineSmall
                 )
             },
             text = {
                 Text(
-                    text = "This will permanently delete $noteCount selected notes. This action cannot be undone.",
+                    text = stringResource(id = com.voicenotesai.R.string.delete_notes_count_text, noteCount),
                     style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Center
                 )
@@ -551,12 +566,12 @@ fun BatchDeleteDialog(
                         containerColor = MaterialTheme.colorScheme.error
                     )
                 ) {
-                    Text("Delete")
+                    Text(stringResource(id = com.voicenotesai.R.string.delete_action))
                 }
             },
             dismissButton = {
                 TextButton(onClick = onDismiss) {
-                    Text("Cancel")
+                    Text(stringResource(id = com.voicenotesai.R.string.cancel))
                 }
             },
             modifier = modifier
@@ -588,26 +603,28 @@ fun EmptySearchState(
         )
         
         Text(
-            text = "No notes found",
+            text = stringResource(id = com.voicenotesai.R.string.no_notes_found),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Medium,
             textAlign = TextAlign.Center
         )
         
         Text(
-            text = "No notes match your search for \"$searchQuery\"",
+            text = stringResource(id = com.voicenotesai.R.string.no_notes_match_search_format, searchQuery),
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         
+        val clearSearchDesc = stringResource(id = com.voicenotesai.R.string.clear_search) + " to see all notes"
+
         OutlinedButton(
             onClick = onClearSearch,
             modifier = Modifier.semantics {
-                contentDescription = "Clear search to see all notes"
+                contentDescription = clearSearchDesc
             }
         ) {
-            Text("Clear Search")
+            Text(stringResource(id = com.voicenotesai.R.string.clear_search))
         }
     }
 }

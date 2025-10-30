@@ -18,6 +18,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -220,22 +221,22 @@ fun ColorContrastDemo(
             verticalArrangement = Arrangement.spacedBy(Spacing.small)
         ) {
             Text(
-                text = "Sample Text",
+                text = stringResource(id = com.voicenotesai.R.string.sample_text),
                 color = foregroundColor,
                 style = MaterialTheme.typography.titleMedium
             )
             
             Text(
-                text = "Contrast Ratio: ${"%.2f".format(contrastRatio)}:1",
+                text = stringResource(id = com.voicenotesai.R.string.contrast_ratio_format, "%.2f".format(contrastRatio)),
                 color = foregroundColor,
                 style = MaterialTheme.typography.bodySmall
             )
             
             Text(
                 text = when {
-                    meetsHighStandards -> "✓ AAA (High Contrast)"
-                    meetsStandards -> "✓ AA (Standard)"
-                    else -> "✗ Below Standards"
+                    meetsHighStandards -> stringResource(id = com.voicenotesai.R.string.contrast_aaa)
+                    meetsStandards -> stringResource(id = com.voicenotesai.R.string.contrast_aa)
+                    else -> stringResource(id = com.voicenotesai.R.string.contrast_below)
                 },
                 color = foregroundColor,
                 style = MaterialTheme.typography.bodySmall,

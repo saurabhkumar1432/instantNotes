@@ -37,6 +37,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -53,7 +54,7 @@ import com.voicenotesai.domain.model.AppError
 import com.voicenotesai.domain.model.canRetry
 import com.voicenotesai.domain.model.getActionGuidance
 import com.voicenotesai.domain.model.shouldNavigateToSettings
-import com.voicenotesai.domain.model.toUserMessage
+import com.voicenotesai.presentation.components.toLocalizedMessage
 import com.voicenotesai.presentation.theme.ExtendedTypography
 import com.voicenotesai.presentation.theme.Spacing
 
@@ -108,7 +109,7 @@ fun EnhancedErrorCard(
                             modifier = Modifier.size(24.dp)
                         )
                         Text(
-                            text = getErrorTitle(error),
+                            text = stringResource(id = getErrorTitle(error)),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onErrorContainer
@@ -116,6 +117,7 @@ fun EnhancedErrorCard(
                     }
                     
                     onDismiss?.let {
+                        val dismissDesc = stringResource(id = com.voicenotesai.R.string.dismiss_error_message)
                         IconButton(
                             onClick = {
                                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
@@ -124,7 +126,7 @@ fun EnhancedErrorCard(
                             modifier = Modifier
                                 .size(32.dp)
                                 .semantics {
-                                    contentDescription = "Dismiss error message"
+                                    contentDescription = dismissDesc
                                 }
                         ) {
                             Icon(
@@ -138,8 +140,9 @@ fun EnhancedErrorCard(
                 }
                 
                 // Error message
+                val localized = error.toLocalizedMessage()
                 Text(
-                    text = error.toUserMessage(),
+                    text = stringResource(id = localized.resId, *localized.args),
                     style = ExtendedTypography.errorText,
                     color = MaterialTheme.colorScheme.onErrorContainer,
                     lineHeight = 20.sp
@@ -187,6 +190,9 @@ fun EnhancedErrorCard(
                 ) {
                     when {
                         error.shouldNavigateToSettings() && onNavigateToSettings != null -> {
+                            val goToSettingsDesc = stringResource(id = com.voicenotesai.R.string.go_to_settings_to_fix)
+                            val goToSettingsNav = stringResource(id = com.voicenotesai.R.string.open_settings_nav)
+
                             FilledTonalButton(
                                 onClick = {
                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -197,7 +203,7 @@ fun EnhancedErrorCard(
                                     contentColor = MaterialTheme.colorScheme.onPrimary
                                 ),
                                 modifier = Modifier.semantics {
-                                    contentDescription = "Go to settings to fix this issue"
+                                    contentDescription = goToSettingsDesc
                                 }
                             ) {
                                 Icon(
@@ -207,19 +213,21 @@ fun EnhancedErrorCard(
                                 )
                                 Spacer(modifier = Modifier.width(Spacing.small))
                                 Text(
-                                    "Go to Settings",
+                                    goToSettingsNav,
                                     style = ExtendedTypography.buttonText
                                 )
                             }
                         }
                         error.canRetry() && onRetry != null -> {
+                            val retryDesc = stringResource(id = com.voicenotesai.R.string.retry_failed_operation)
+
                             OutlinedButton(
                                 onClick = {
                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                     onRetry()
                                 },
                                 modifier = Modifier.semantics {
-                                    contentDescription = "Retry the failed operation"
+                                    contentDescription = retryDesc
                                 }
                             ) {
                                 Icon(
@@ -229,7 +237,7 @@ fun EnhancedErrorCard(
                                 )
                                 Spacer(modifier = Modifier.width(Spacing.small))
                                 Text(
-                                    "Retry",
+                                    stringResource(id = com.voicenotesai.R.string.retry),
                                     style = ExtendedTypography.buttonText
                                 )
                             }
@@ -275,23 +283,23 @@ fun ErrorIcon(
 /**
  * Get user-friendly title for different error types
  */
-fun getErrorTitle(error: AppError): String {
+fun getErrorTitle(error: AppError): Int {
     return when (error) {
-        is AppError.PermissionDenied -> "Permission Required"
+        is AppError.PermissionDenied -> com.voicenotesai.R.string.error_permission_required
         is AppError.RecordingFailed,
         is AppError.NoSpeechDetected,
         is AppError.RecordingTimeout,
-        is AppError.SpeechRecognizerUnavailable -> "Recording Issue"
+        is AppError.SpeechRecognizerUnavailable -> com.voicenotesai.R.string.error_recording_issue
         is AppError.NetworkError,
         is AppError.NoInternetConnection,
-        is AppError.RequestTimeout -> "Connection Problem"
+        is AppError.RequestTimeout -> com.voicenotesai.R.string.error_connection_problem
         is AppError.ApiError,
         is AppError.InvalidAPIKey,
         is AppError.RateLimitExceeded,
-        is AppError.InvalidRequest -> "AI Service Issue"
+        is AppError.InvalidRequest -> com.voicenotesai.R.string.error_ai_service_issue
         is AppError.SettingsNotConfigured,
-        is AppError.InvalidSettings -> "Setup Required"
-        is AppError.StorageError -> "Storage Problem"
-        is AppError.Unknown -> "Unexpected Error"
+        is AppError.InvalidSettings -> com.voicenotesai.R.string.error_setup_required
+        is AppError.StorageError -> com.voicenotesai.R.string.error_storage_problem
+        is AppError.Unknown -> com.voicenotesai.R.string.error_unexpected
     }
 }

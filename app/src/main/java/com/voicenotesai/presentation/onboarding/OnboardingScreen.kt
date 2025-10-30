@@ -61,6 +61,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -219,13 +220,14 @@ private fun OnboardingTopBar(
         title = { },
         navigationIcon = {
             if (canGoBack) {
+                val goBackDesc = stringResource(id = com.voicenotesai.R.string.go_back_description)
                 IconButton(
                     onClick = {
                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         onBackClick()
                     },
                     modifier = Modifier.semantics {
-                        contentDescription = "Go back to previous step"
+                        contentDescription = goBackDesc
                     }
                 ) {
                     Icon(
@@ -237,17 +239,18 @@ private fun OnboardingTopBar(
         },
         actions = {
             if (currentStep != OnboardingStep.Welcome) {
+                val skipOnboardingDesc = stringResource(id = com.voicenotesai.R.string.skip_onboarding_description)
                 TextButton(
                     onClick = {
                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         onSkipClick()
                     },
                     modifier = Modifier.semantics {
-                        contentDescription = "Skip onboarding process"
+                        contentDescription = skipOnboardingDesc
                     }
                 ) {
                     Text(
-                        "Skip",
+                        stringResource(id = com.voicenotesai.R.string.skip),
                         style = ExtendedTypography.buttonText,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -279,7 +282,7 @@ private fun ProgressIndicator(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Step ${currentIndex + 1} of ${OnboardingConfig.totalSteps}",
+                text = stringResource(id = com.voicenotesai.R.string.progress_step_format, currentIndex + 1, OnboardingConfig.totalSteps),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -351,7 +354,7 @@ private fun OnboardingPageContent(
         
         // Title
         Text(
-            text = page.title,
+            text = stringResource(id = page.titleRes),
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center,
@@ -362,7 +365,7 @@ private fun OnboardingPageContent(
         
         // Subtitle
         Text(
-            text = page.subtitle,
+            text = stringResource(id = page.subtitleRes),
             style = MaterialTheme.typography.titleMedium,
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -373,7 +376,7 @@ private fun OnboardingPageContent(
         
         // Description
         Text(
-            text = page.description,
+            text = stringResource(id = page.descriptionRes),
             style = MaterialTheme.typography.bodyLarge,
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -387,32 +390,34 @@ private fun OnboardingPageContent(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(Spacing.medium)
         ) {
+            val primaryButtonDesc = stringResource(id = page.primaryButtonTextRes) + " button"
             Button(
                 onClick = onPrimaryAction,
                 modifier = Modifier
                     .fillMaxWidth()
                     .semantics {
-                        contentDescription = "${page.primaryButtonText} button"
+                        contentDescription = primaryButtonDesc
                     },
                 enabled = uiState.canProceed && !uiState.isLoading
             ) {
                 Text(
-                    text = page.primaryButtonText,
+                    text = stringResource(id = page.primaryButtonTextRes),
                     style = ExtendedTypography.buttonText
                 )
             }
             
-            page.secondaryButtonText?.let { secondaryText ->
+            page.secondaryButtonTextRes?.let { secondaryRes ->
+                val secondaryButtonDesc = stringResource(id = secondaryRes) + " button"
                 OutlinedButton(
                     onClick = onSecondaryAction,
                     modifier = Modifier
                         .fillMaxWidth()
                         .semantics {
-                            contentDescription = "$secondaryText button"
+                            contentDescription = secondaryButtonDesc
                         }
                 ) {
                     Text(
-                        text = secondaryText,
+                        text = stringResource(id = secondaryRes),
                         style = ExtendedTypography.buttonText
                     )
                 }
@@ -432,23 +437,23 @@ private fun SkipConfirmationDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                "Skip Setup?",
+                stringResource(id = com.voicenotesai.R.string.skip_setup_title),
                 fontWeight = FontWeight.Bold
             )
         },
         text = {
             Text(
-                "You can always complete the setup later from Settings, but you'll need to configure your AI provider before recording notes."
+                stringResource(id = com.voicenotesai.R.string.skip_setup_text)
             )
         },
         confirmButton = {
             TextButton(onClick = onConfirm) {
-                Text("Skip")
+                Text(stringResource(id = com.voicenotesai.R.string.skip))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Continue Setup")
+                Text(stringResource(id = com.voicenotesai.R.string.continue_setup))
             }
         }
     )
