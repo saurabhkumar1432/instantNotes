@@ -75,21 +75,29 @@ object AnimationConfig {
 
 /**
  * Enhanced bouncy clickable modifier with haptic feedback and scale animation
+ * Now integrates with the advanced animation system for performance adaptation
  */
 fun Modifier.bouncyClickable(
     enabled: Boolean = true,
     hapticFeedback: Boolean = true,
     scaleDown: Float = 0.96f,
-    animationSpec: AnimationSpec<Float> = AnimationConfig.QuickSpring,
+    animationSpec: AnimationSpec<Float>? = null,
     onClick: () -> Unit
 ): Modifier = composed {
     val haptic = LocalHapticFeedback.current
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     
+    // Use performance-adaptive animation spec if none provided
+    val performanceManager = rememberPerformanceAdaptiveAnimationManager()
+    val adaptiveSpec = animationSpec ?: performanceManager.createOptimizedAnimationSpec(
+        baseDuration = 150,
+        animationType = AnimationType.Micro
+    )
+    
     val scale by animateFloatAsState(
         targetValue = if (isPressed) scaleDown else 1f,
-        animationSpec = animationSpec,
+        animationSpec = adaptiveSpec,
         label = "bouncy-scale"
     )
     
@@ -227,6 +235,7 @@ fun animatedStateColor(
 
 /**
  * Pulse animation for attention-grabbing elements
+ * Now performance-aware and adapts to device capabilities
  */
 fun Modifier.pulseAnimation(
     enabled: Boolean = true,
@@ -235,6 +244,12 @@ fun Modifier.pulseAnimation(
     duration: Int = 1000
 ): Modifier = composed {
     if (!enabled) return@composed this
+    
+    // Check if background animations should be enabled based on performance
+    val performanceManager = rememberPerformanceAdaptiveAnimationManager()
+    val shouldAnimate = performanceManager.shouldEnableFeature(AnimationFeature.BackgroundAnimations)
+    
+    if (!shouldAnimate) return@composed this
     
     val infiniteTransition = androidx.compose.animation.core.rememberInfiniteTransition(
         label = "pulse-animation"

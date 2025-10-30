@@ -367,70 +367,113 @@ fun EnhancedRecordButton(
 
 /**
  * Enhanced waveform visualization with better animation and responsiveness
+ * Now integrates with the new AudioVisualizationEngine for real-time data
  */
 @Composable
 fun EnhancedWaveformIndicator(
     isActive: Boolean = true,
     intensity: Float = 1f,
+    visualizationData: com.voicenotesai.domain.visualization.VisualizationData? = null,
     modifier: Modifier = Modifier
 ) {
-    val infiniteTransition = rememberInfiniteTransition(label = "enhanced-waveform")
-    val barCount = 7
-    
-    val baseColor = MaterialTheme.colorScheme.primary
-    val accentColor = MaterialTheme.colorScheme.secondary
-    
-    val barBrush = Brush.verticalGradient(
-        colors = listOf(
-            accentColor,
-            baseColor,
-            accentColor
-        )
-    )
-
-    val barHeights = (0 until barCount).map { index ->
-        infiniteTransition.animateFloat(
-            initialValue = if (isActive) 0.2f else 0.1f,
-            targetValue = if (isActive) {
-                (0.4f + (kotlin.math.sin(index * 0.5).toFloat() * 0.3f)).coerceIn(0.3f, 1f) * intensity
-            } else {
-                0.15f
-            },
-            animationSpec = infiniteRepeatable(
-                animation = tween(
-                    durationMillis = 400 + (index * 80),
-                    easing = FastOutSlowInEasing
-                ),
-                repeatMode = RepeatMode.Reverse,
-                initialStartOffset = androidx.compose.animation.core.StartOffset(index * 60)
+    // Use real visualization data if available, otherwise fall back to animated bars
+    if (visualizationData != null && isActive) {
+        // Use the new AudioVisualizationDisplay component
+        AudioVisualizationDisplay(
+            visualizationData = visualizationData,
+            audioState = com.voicenotesai.domain.visualization.AudioState(
+                isRecording = isActive,
+                duration = 0L,
+                averageLevel = intensity,
+                peakLevel = intensity,
+                silenceDuration = 0L,
+                speechDetected = intensity > 0.1f
             ),
-            label = "waveform-bar-$index"
-        )
-    }
-
-    val audioLevelDesc = stringResource(id = com.voicenotesai.R.string.audio_level)
-
-    Row(
-        modifier = modifier
-            .height(120.dp)
-            .semantics {
-                contentDescription = audioLevelDesc
-                // Expose approximate audio intensity (0..1) as a progress for assistive tech
-                progressBarRangeInfo = ProgressBarRangeInfo(intensity, 0f..1f)
-            },
-        horizontalArrangement = Arrangement.spacedBy(Spacing.extraSmall, Alignment.CenterHorizontally),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        barHeights.forEach { heightFraction ->
-            Box(
-                modifier = Modifier
-                    .width(6.dp)
-                    .fillMaxHeight(heightFraction.value)
-                    .background(
-                        brush = barBrush,
-                        shape = RoundedCornerShape(3.dp)
+            uiAdaptations = com.voicenotesai.domain.visualization.UIAdaptationConfig(
+                backgroundIntensity = intensity * 0.3f,
+                pulseAnimation = if (isActive) com.voicenotesai.domain.visualization.PulseConfig(
+                    intensity = intensity,
+                    frequency = 1.0f,
+                    enabled = true
+                ) else null,
+                colorScheme = com.voicenotesai.domain.visualization.VisualizationColorScheme(
+                    primaryColor = MaterialTheme.colorScheme.primary,
+                    secondaryColor = MaterialTheme.colorScheme.secondary,
+                    accentColor = MaterialTheme.colorScheme.tertiary,
+                    backgroundColor = MaterialTheme.colorScheme.surface,
+                    gradientColors = listOf(
+                        MaterialTheme.colorScheme.primary,
+                        MaterialTheme.colorScheme.secondary,
+                        MaterialTheme.colorScheme.tertiary
                     )
+                ),
+                showSpectralBars = false,
+                showWaveform = true,
+                showLevelMeter = isActive
+            ),
+            modifier = modifier,
+            height = 120.dp
+        )
+    } else {
+        // Fallback to animated bars when no real data is available
+        val infiniteTransition = rememberInfiniteTransition(label = "enhanced-waveform")
+        val barCount = 7
+        
+        val baseColor = MaterialTheme.colorScheme.primary
+        val accentColor = MaterialTheme.colorScheme.secondary
+        
+        val barBrush = Brush.verticalGradient(
+            colors = listOf(
+                accentColor,
+                baseColor,
+                accentColor
             )
+        )
+
+        val barHeights = (0 until barCount).map { index ->
+            infiniteTransition.animateFloat(
+                initialValue = if (isActive) 0.2f else 0.1f,
+                targetValue = if (isActive) {
+                    (0.4f + (kotlin.math.sin(index * 0.5).toFloat() * 0.3f)).coerceIn(0.3f, 1f) * intensity
+                } else {
+                    0.15f
+                },
+                animationSpec = infiniteRepeatable(
+                    animation = tween(
+                        durationMillis = 400 + (index * 80),
+                        easing = FastOutSlowInEasing
+                    ),
+                    repeatMode = RepeatMode.Reverse,
+                    initialStartOffset = androidx.compose.animation.core.StartOffset(index * 60)
+                ),
+                label = "waveform-bar-$index"
+            )
+        }
+
+        val audioLevelDesc = stringResource(id = com.voicenotesai.R.string.audio_level)
+
+        Row(
+            modifier = modifier
+                .height(120.dp)
+                .semantics {
+                    contentDescription = audioLevelDesc
+                    // Expose approximate audio intensity (0..1) as a progress for assistive tech
+                    progressBarRangeInfo = ProgressBarRangeInfo(intensity, 0f..1f)
+                },
+            horizontalArrangement = Arrangement.spacedBy(Spacing.extraSmall, Alignment.CenterHorizontally),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            barHeights.forEach { heightFraction ->
+                Box(
+                    modifier = Modifier
+                        .width(6.dp)
+                        .fillMaxHeight(heightFraction.value)
+                        .background(
+                            brush = barBrush,
+                            shape = RoundedCornerShape(3.dp)
+                        )
+                )
+            }
         }
     }
 }

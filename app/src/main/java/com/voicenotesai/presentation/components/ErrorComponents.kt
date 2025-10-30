@@ -300,6 +300,16 @@ fun getErrorTitle(error: AppError): Int {
         is AppError.SettingsNotConfigured,
         is AppError.InvalidSettings -> com.voicenotesai.R.string.error_setup_required
         is AppError.StorageError -> com.voicenotesai.R.string.error_storage_problem
+        is AppError.AIProcessingError,
+        is AppError.LocalModelError,
+        is AppError.ModelDownloadError,
+        is AppError.LocalProcessingUnavailable,
+        is AppError.ModelNotFound -> com.voicenotesai.R.string.error_ai_service_issue
+        is AppError.ExportError -> com.voicenotesai.R.string.error_storage_problem
+        is AppError.ImportError -> com.voicenotesai.R.string.error_storage_problem
+        is AppError.BackupError -> com.voicenotesai.R.string.error_storage_problem
+        is AppError.RestoreError -> com.voicenotesai.R.string.error_storage_problem
+        is AppError.DataIntegrityError -> com.voicenotesai.R.string.error_storage_problem
         is AppError.Unknown -> com.voicenotesai.R.string.error_unexpected
     }
 }

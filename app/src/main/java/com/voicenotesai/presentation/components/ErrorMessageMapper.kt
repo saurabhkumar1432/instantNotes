@@ -40,6 +40,16 @@ fun AppError.toLocalizedMessage(): LocalizedMessage {
         is AppError.SettingsNotConfigured -> LocalizedMessage(R.string.error_settings_not_configured)
         is AppError.InvalidSettings -> LocalizedMessage(R.string.error_invalid_settings_format, arrayOf(this.field))
         is AppError.StorageError -> LocalizedMessage(R.string.error_storage_format, arrayOf(this.message))
+        is AppError.ExportError -> LocalizedMessage(R.string.error_storage_format, arrayOf(this.message))
+        is AppError.ImportError -> LocalizedMessage(R.string.error_storage_format, arrayOf(this.message))
+        is AppError.BackupError -> LocalizedMessage(R.string.error_storage_format, arrayOf(this.message))
+        is AppError.RestoreError -> LocalizedMessage(R.string.error_storage_format, arrayOf(this.message))
+        is AppError.DataIntegrityError -> LocalizedMessage(R.string.error_storage_format, arrayOf(this.message))
+        is AppError.AIProcessingError -> LocalizedMessage(R.string.error_ai_processing_format, arrayOf(this.message))
+        is AppError.LocalModelError -> LocalizedMessage(R.string.error_local_model_format, arrayOf(this.message))
+        is AppError.ModelDownloadError -> LocalizedMessage(R.string.error_model_download_format, arrayOf(this.message))
+        is AppError.LocalProcessingUnavailable -> LocalizedMessage(R.string.error_local_processing_unavailable)
+        is AppError.ModelNotFound -> LocalizedMessage(R.string.error_model_not_found)
         is AppError.Unknown -> LocalizedMessage(R.string.error_unknown_format, arrayOf(this.message))
     }
 }

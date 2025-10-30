@@ -2,16 +2,20 @@ package com.voicenotesai.domain.usecase
 
 import com.voicenotesai.data.repository.AIRepository
 import com.voicenotesai.data.repository.SettingsRepository
+import com.voicenotesai.domain.ai.AIProcessingEngine
+import com.voicenotesai.domain.ai.NoteFormat
 import kotlinx.coroutines.flow.firstOrNull
 import javax.inject.Inject
 
 /**
  * Use case that generates AI-powered bullet-point notes from transcribed text.
+ * Enhanced with advanced AI processing engine for better note generation.
  * Retrieves AI settings and calls the appropriate AI service.
  */
 class GenerateNotesUseCase @Inject constructor(
     private val aiRepository: AIRepository,
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val aiProcessingEngine: AIProcessingEngine
 ) {
     companion object {
         // Maximum characters to send to API (approximately 10,000 tokens)
@@ -27,6 +31,17 @@ class GenerateNotesUseCase @Inject constructor(
      * @return Result<String> containing the formatted notes or an error
      */
     suspend operator fun invoke(transcribedText: String): Result<String> {
+        return generateNotes(transcribedText, NoteFormat.BulletPoints)
+    }
+    
+    /**
+     * Generates formatted notes from transcribed text using the specified format.
+     * 
+     * @param transcribedText The text transcribed from voice recording
+     * @param format The desired note format
+     * @return Result<String> containing the formatted notes or an error
+     */
+    suspend fun generateNotes(transcribedText: String, format: NoteFormat): Result<String> {
         // Validate input
         if (transcribedText.isBlank()) {
             return Result.failure(IllegalArgumentException("Transcribed text cannot be empty"))
@@ -39,6 +54,24 @@ class GenerateNotesUseCase @Inject constructor(
             transcribedText
         }
 
+        // Try using the enhanced AI processing engine first
+        try {
+            val result = aiProcessingEngine.generateNotes(processedText, format)
+            if (result.success) {
+                return Result.success(result.notes)
+            }
+        } catch (e: Exception) {
+            // Fall back to legacy implementation if enhanced engine fails
+        }
+
+        // Fallback to legacy AI repository implementation
+        return generateNotesLegacy(processedText)
+    }
+    
+    /**
+     * Legacy note generation using the original AI repository.
+     */
+    private suspend fun generateNotesLegacy(processedText: String): Result<String> {
         // Retrieve AI settings
         val settings = settingsRepository.getSettings().firstOrNull()
             ?: return Result.failure(IllegalStateException("AI settings not configured. Please configure settings first."))

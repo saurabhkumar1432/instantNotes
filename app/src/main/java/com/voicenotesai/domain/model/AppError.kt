@@ -45,6 +45,24 @@ sealed class AppError {
     data class StorageError(val message: String) : AppError()
 
     /**
+     * AI processing errors
+     */
+    data class AIProcessingError(val message: String) : AppError()
+    data class LocalModelError(val message: String, val modelId: String? = null) : AppError()
+    data class ModelDownloadError(val message: String, val modelName: String? = null) : AppError()
+    object LocalProcessingUnavailable : AppError()
+    object ModelNotFound : AppError()
+
+    /**
+     * Data portability errors
+     */
+    data class ExportError(val message: String, val format: String? = null) : AppError()
+    data class ImportError(val message: String, val lineNumber: Int? = null) : AppError()
+    data class BackupError(val message: String) : AppError()
+    data class RestoreError(val message: String) : AppError()
+    data class DataIntegrityError(val message: String) : AppError()
+
+    /**
      * Generic errors
      */
     data class Unknown(val message: String) : AppError()
@@ -107,6 +125,30 @@ fun AppError.toUserMessage(): String {
         is AppError.StorageError -> 
             "Storage error: $message. Please try again."
 
+        // AI processing errors
+        is AppError.AIProcessingError -> 
+            "AI processing failed: $message. Please try again or check your settings."
+        is AppError.LocalModelError -> 
+            "Local model error: $message. ${modelId?.let { "Model: $it" } ?: ""}"
+        is AppError.ModelDownloadError -> 
+            "Model download failed: $message. ${modelName?.let { "Model: $it" } ?: ""}"
+        is AppError.LocalProcessingUnavailable -> 
+            "Local AI processing is not available. Please download models or check your internet connection."
+        is AppError.ModelNotFound -> 
+            "Required AI model not found. Please download the necessary models in Settings."
+
+        // Data portability errors
+        is AppError.ExportError -> 
+            "Export failed: $message. ${format?.let { "Format: $it" } ?: ""}"
+        is AppError.ImportError -> 
+            "Import failed: $message. ${lineNumber?.let { "Line: $it" } ?: ""}"
+        is AppError.BackupError -> 
+            "Backup failed: $message. Please check available storage and try again."
+        is AppError.RestoreError -> 
+            "Restore failed: $message. Please verify the backup file and try again."
+        is AppError.DataIntegrityError -> 
+            "Data integrity check failed: $message. The file may be corrupted."
+
         // Unknown errors
         is AppError.Unknown -> 
             "An unexpected error occurred: $message. Please try again."
@@ -129,6 +171,10 @@ fun AppError.getActionGuidance(): String? {
             "Connect to Wi-Fi or mobile data and try again."
         is AppError.RateLimitExceeded -> 
             "Wait a few minutes before trying again."
+        is AppError.LocalProcessingUnavailable, is AppError.ModelNotFound -> 
+            "Go to Settings to download AI models for offline processing."
+        is AppError.ModelDownloadError -> 
+            "Check your internet connection and try downloading again."
         else -> null
     }
 }
@@ -143,8 +189,15 @@ fun AppError.canRetry(): Boolean {
         is AppError.RequestTimeout,
         is AppError.RecordingFailed,
         is AppError.NoSpeechDetected,
-    is AppError.RateLimitExceeded,
-    is AppError.ApiError -> true
+        is AppError.RateLimitExceeded,
+        is AppError.ApiError,
+        is AppError.ExportError,
+        is AppError.ImportError,
+        is AppError.BackupError,
+        is AppError.RestoreError,
+        is AppError.AIProcessingError,
+        is AppError.LocalModelError,
+        is AppError.ModelDownloadError -> true
         else -> false
     }
 }
@@ -156,7 +209,9 @@ fun AppError.shouldNavigateToSettings(): Boolean {
     return when (this) {
         is AppError.SettingsNotConfigured,
         is AppError.InvalidSettings,
-        is AppError.InvalidAPIKey -> true
+        is AppError.InvalidAPIKey,
+        is AppError.LocalProcessingUnavailable,
+        is AppError.ModelNotFound -> true
         else -> false
     }
 }

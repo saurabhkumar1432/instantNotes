@@ -1,0 +1,26 @@
+package com.voicenotesai.di
+
+import com.voicenotesai.data.sync.SyncManagerImpl
+import com.voicenotesai.domain.sync.SyncManager
+import dagger.Binds
+import dagger.Module
+import dagger.hilt.InstallIn
+import dagger.hilt.components.SingletonComponent
+import javax.inject.Singleton
+
+/**
+ * Dependency injection module for sync-related components.
+ */
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class SyncModule {
+
+    /**
+     * Provides the SyncManager implementation.
+     */
+    @Binds
+    @Singleton
+    abstract fun bindSyncManager(
+        syncManagerImpl: SyncManagerImpl
+    ): SyncManager
+}
