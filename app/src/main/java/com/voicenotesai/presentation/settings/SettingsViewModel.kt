@@ -311,7 +311,7 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isDiscoveringModels = true, error = null) }
             try {
-                val models = aiConfigurationManager.discoverLocalModels(
+                aiConfigurationManager.discoverLocalModels(
                     provider = currentState.provider,
                     baseUrl = currentState.baseUrl
                 )
