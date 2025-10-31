@@ -401,7 +401,7 @@ class MockDeviceSimulator {
         
         // Simulate performance based on device specs
         val baseStartupTime = 400L
-        val baseFra meTime = 16.67
+        val baseFrameTime = 16.67
         val baseMemoryUsage = 128.0
         val baseScrollScore = 90
         
@@ -420,7 +420,7 @@ class MockDeviceSimulator {
         val memoryPressureModifier = 1.0 + (memoryPressurePercent / 100.0)
         
         val startupTime = (baseStartupTime * cpuModifier * apiModifier * memoryPressureModifier).toLong()
-        val frameTime = baseFra meTime * cpuModifier * densityModifier * memoryPressureModifier
+        val frameTime = baseFrameTime * cpuModifier * densityModifier * memoryPressureModifier
         val memoryUsage = baseMemoryUsage * ramModifier * densityModifier
         val scrollScore = (baseScrollScore / (cpuModifier * memoryPressureModifier)).toInt()
         
