@@ -88,7 +88,6 @@ class AIProviderDataModelsTest {
         val sanitized = config.sanitized()
         assertEquals("***", sanitized.apiKey)
         assertEquals("***", sanitized.customHeaders["Authorization"])
-    }
         assertEquals("gpt-3.5-turbo", sanitized.modelName) // Non-sensitive data preserved
     }
 
