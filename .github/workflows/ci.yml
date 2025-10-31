@@ -41,20 +41,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      - name: Build debug APK
-        run: ./gradlew assembleDebug --no-daemon --stacktrace
+      - name: Build with Gradle
+        run: ./gradlew build --stacktrace
         env:
           CI: true
-
-      - name: Run checks
-        run: ./gradlew check --no-daemon --stacktrace
-
-      - name: Run tests
-        run: ./gradlew test --no-daemon --stacktrace
-
-      - name: Run lint
-        run: ./gradlew lintDebug --no-daemon --stacktrace
-        continue-on-error: true
 
       - name: Upload build reports
         if: failure()
