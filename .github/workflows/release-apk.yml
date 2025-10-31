@@ -46,6 +46,9 @@ jobs:
           VERSION_CODE=$(grep -oP 'versionCode\s*=\s*\K\d+' app/build.gradle.kts || echo "1")
           VERSION_NAME=$(grep -oP 'versionName\s*=\s*"\K[^"]+' app/build.gradle.kts || echo "1.0")
           
+          echo "Extracted VERSION_CODE: $VERSION_CODE"
+          echo "Extracted VERSION_NAME: $VERSION_NAME"
+          
           # Get commit info
           COMMIT_COUNT=$(git rev-list --count HEAD)
           SHORT_SHA=$(git rev-parse --short HEAD)
@@ -69,7 +72,13 @@ jobs:
         run: |
           # For now, we'll use the unsigned APK
           # In production, you would sign it here using a keystore
-          APK_PATH=$(find app/build/outputs/apk/release -name "*.apk" | head -1)
+          APK_PATH=$(find app/build/outputs/apk/release -name "*-release-unsigned.apk" -o -name "*-release.apk" | head -1)
+          
+          if [ -z "$APK_PATH" ]; then
+            echo "Error: No release APK found"
+            exit 1
+          fi
+          
           APK_NAME="VoiceNotesAI-${{ steps.version.outputs.release_tag }}.apk"
           
           # Rename APK with version info
