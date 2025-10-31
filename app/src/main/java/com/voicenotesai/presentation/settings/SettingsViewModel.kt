@@ -33,6 +33,9 @@ data class SettingsUiState(
 
     val isLoading: Boolean = false,
     val isDiscoveringModels: Boolean = false,
+    val isLoadingModels: Boolean = false,
+    val discoveredModels: List<AIModel> = emptyList(),
+    val availableModels: List<AIModel> = emptyList(),
     val error: AppError? = null,
     val isSaved: Boolean = false,
     val validationStatus: ValidationStatus = ValidationStatus.NONE,
@@ -105,6 +108,9 @@ class SettingsViewModel @Inject constructor(
                     }
 
                 }
+                
+                // Load available models for the current provider
+                loadAvailableModels()
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(
@@ -127,10 +133,14 @@ class SettingsViewModel @Inject constructor(
 
                 isSaved = false,
                 validationStatus = ValidationStatus.NONE,
-                validationMessage = ""
+                validationMessage = "",
+                discoveredModels = emptyList(),
+                availableModels = emptyList()
             ) 
         }
 
+        // Load available models for cloud providers
+        loadAvailableModels()
     }
 
     fun onApiKeyChanged(apiKey: String) {
@@ -311,13 +321,15 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isDiscoveringModels = true, error = null) }
             try {
-                aiConfigurationManager.discoverLocalModels(
+                val models = aiConfigurationManager.discoverLocalModels(
                     provider = currentState.provider,
                     baseUrl = currentState.baseUrl
                 )
                 _uiState.update {
                     it.copy(
-                        isDiscoveringModels = false
+                        isDiscoveringModels = false,
+                        discoveredModels = models,
+                        availableModels = models
                     )
                 }
             } catch (e: Exception) {
@@ -325,6 +337,40 @@ class SettingsViewModel @Inject constructor(
                     it.copy(
                         isDiscoveringModels = false,
                         error = AppError.NetworkError(e.message ?: "Failed to discover models")
+                    )
+                }
+            }
+        }
+    }
+
+    fun loadAvailableModels() {
+        val currentState = _uiState.value
+        
+        // Only load for cloud providers that have predefined models
+        if (currentState.provider !is AIProviderType.OpenAI && 
+            currentState.provider !is AIProviderType.Anthropic && 
+            currentState.provider !is AIProviderType.GoogleAI) {
+            return
+        }
+        
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingModels = true) }
+            try {
+                val models = aiConfigurationManager.getAvailableModels(
+                    provider = currentState.provider,
+                    baseUrl = currentState.baseUrl.takeIf { it.isNotBlank() }
+                )
+                _uiState.update {
+                    it.copy(
+                        isLoadingModels = false,
+                        availableModels = models
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isLoadingModels = false,
+                        error = AppError.NetworkError(e.message ?: "Failed to load available models")
                     )
                 }
             }
