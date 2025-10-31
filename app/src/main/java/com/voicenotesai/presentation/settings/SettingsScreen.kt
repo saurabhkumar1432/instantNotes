@@ -409,7 +409,6 @@ private fun AIProviderConfiguration(
 				OutlinedTextField(
 					value = uiState.modelName,
 					onValueChange = onModelChanged,
-					readOnly = false,
 					label = { Text("Model") },
 					placeholder = { Text("Select or enter model name") },
 					trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = modelExpanded) },
