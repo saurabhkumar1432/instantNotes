@@ -41,7 +41,7 @@ jobs:
 
       - name: Build and validate
         run: |
-          ./gradlew :app:assembleDebug --no-daemon --stacktrace
+          ./gradlew assembleDebug check --no-daemon --stacktrace
         env:
           CI: true
 
