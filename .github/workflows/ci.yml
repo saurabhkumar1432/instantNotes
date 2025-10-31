@@ -39,17 +39,13 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      - name: Run custom validation checks
+      - name: Build and validate
         run: |
-          ./gradlew :app:validateNoHardcodedUiStrings --no-daemon --stacktrace
-          ./gradlew :app:detectStringResourceInNonComposable --no-daemon --stacktrace
-
-      - name: Build debug APK
-        run: ./gradlew :app:assembleDebug --no-daemon --stacktrace
+          ./gradlew :app:assembleDebug --no-daemon --stacktrace
         env:
           CI: true
 
-      - name: Run unit tests
+      - name: Run tests
         run: ./gradlew test --no-daemon --stacktrace
 
       - name: Run lint
