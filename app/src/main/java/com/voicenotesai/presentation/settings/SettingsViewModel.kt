@@ -2,12 +2,13 @@ package com.voicenotesai.presentation.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.voicenotesai.data.model.AIProvider
-import com.voicenotesai.data.model.AISettings
-import com.voicenotesai.data.repository.AIRepository
-import com.voicenotesai.data.repository.SettingsRepository
+import com.voicenotesai.data.model.AIConfiguration
+import com.voicenotesai.data.model.AIModel
+import com.voicenotesai.data.model.AIProviderType
+import com.voicenotesai.domain.ai.AIConfigurationManager
+import com.voicenotesai.domain.ai.ValidationResult
+import com.voicenotesai.domain.ai.ConnectionResult
 import com.voicenotesai.domain.model.AppError
-import com.voicenotesai.domain.model.toUserMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,72 +25,112 @@ enum class ValidationStatus {
 }
 
 data class SettingsUiState(
-    val provider: AIProvider = AIProvider.OPENAI,
+    val provider: AIProviderType = AIProviderType.OpenAI,
     val apiKey: String = "",
-    val model: String = "",
+    val baseUrl: String = "",
+    val modelName: String = "",
+    val customHeaders: Map<String, String> = emptyMap(),
+
     val isLoading: Boolean = false,
+    val isDiscoveringModels: Boolean = false,
     val error: AppError? = null,
     val isSaved: Boolean = false,
     val validationStatus: ValidationStatus = ValidationStatus.NONE,
     val validationMessage: String = ""
-)
+) {
+    fun isConfigurationComplete(): Boolean {
+        return when {
+            provider.requiresApiKey() && apiKey.isBlank() -> false
+            modelName.isBlank() -> false
+            (provider is AIProviderType.Ollama || provider is AIProviderType.LMStudio || provider is AIProviderType.Custom) && baseUrl.isBlank() -> false
+            else -> true
+        }
+    }
+    
+    fun toAIConfiguration(): AIConfiguration {
+        return AIConfiguration(
+            provider = provider,
+            apiKey = apiKey.takeIf { it.isNotBlank() },
+            baseUrl = baseUrl.takeIf { it.isNotBlank() },
+            modelName = modelName,
+            customHeaders = customHeaders,
+            isValidated = validationStatus == ValidationStatus.SUCCESS
+        )
+    }
+}
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
-    private val settingsRepository: SettingsRepository,
-    private val aiRepository: AIRepository
+    private val aiConfigurationManager: AIConfigurationManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
 
     init {
-        loadSettings()
+        loadCurrentConfiguration()
     }
 
-    private fun loadSettings() {
+    private fun loadCurrentConfiguration() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             try {
-                settingsRepository.getSettings().collect { settings ->
-                    if (settings != null) {
-                        _uiState.update {
-                            it.copy(
-                                provider = settings.provider,
-                                apiKey = settings.apiKey,
-                                model = settings.model,
-                                isLoading = false,
-                                validationStatus = if (settings.isValidated) 
-                                    ValidationStatus.SUCCESS 
-                                else 
-                                    ValidationStatus.NONE
-                            )
-                        }
-                    } else {
-                        _uiState.update { it.copy(isLoading = false) }
+                val currentConfig = aiConfigurationManager.getCurrentConfiguration()
+                if (currentConfig != null) {
+                    _uiState.update {
+                        it.copy(
+                            provider = currentConfig.provider,
+                            apiKey = currentConfig.apiKey ?: "",
+                            baseUrl = currentConfig.baseUrl ?: currentConfig.provider.getDefaultBaseUrl() ?: "",
+                            modelName = currentConfig.modelName,
+                            customHeaders = currentConfig.customHeaders,
+                            isLoading = false,
+                            validationStatus = if (currentConfig.isValidated) 
+                                ValidationStatus.SUCCESS 
+                            else 
+                                ValidationStatus.NONE,
+                            validationMessage = if (currentConfig.isValidated) "Configuration validated" else ""
+                        )
                     }
+
+                } else {
+                    // Set default configuration
+                    val defaultProvider = AIProviderType.OpenAI
+                    _uiState.update { 
+                        it.copy(
+                            provider = defaultProvider,
+                            baseUrl = defaultProvider.getDefaultBaseUrl() ?: "",
+                            isLoading = false
+                        ) 
+                    }
+
                 }
             } catch (e: Exception) {
-                val error = AppError.StorageError(e.message ?: "Failed to load settings")
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        error = error
+                        error = AppError.StorageError(e.message ?: "Failed to load configuration")
                     )
                 }
             }
         }
     }
 
-    fun onProviderChanged(provider: AIProvider) {
+    fun onProviderChanged(provider: AIProviderType) {
         _uiState.update { 
             it.copy(
-                provider = provider, 
+                provider = provider,
+                baseUrl = provider.getDefaultBaseUrl() ?: "",
+                apiKey = if (provider.requiresApiKey()) it.apiKey else "",
+                modelName = "",
+                customHeaders = emptyMap(),
+
                 isSaved = false,
                 validationStatus = ValidationStatus.NONE,
                 validationMessage = ""
             ) 
         }
+
     }
 
     fun onApiKeyChanged(apiKey: String) {
@@ -103,10 +144,10 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun onModelChanged(model: String) {
+    fun onBaseUrlChanged(baseUrl: String) {
         _uiState.update { 
             it.copy(
-                model = model, 
+                baseUrl = baseUrl, 
                 isSaved = false,
                 validationStatus = ValidationStatus.NONE,
                 validationMessage = ""
@@ -114,22 +155,42 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun saveSettings() {
+    fun onModelChanged(modelName: String) {
+        _uiState.update { 
+            it.copy(
+                modelName = modelName, 
+                isSaved = false,
+                validationStatus = ValidationStatus.NONE,
+                validationMessage = ""
+            ) 
+        }
+    }
+
+    fun onCustomHeadersChanged(headers: Map<String, String>) {
+        _uiState.update { 
+            it.copy(
+                customHeaders = headers, 
+                isSaved = false,
+                validationStatus = ValidationStatus.NONE,
+                validationMessage = ""
+            ) 
+        }
+    }
+
+    fun saveConfiguration() {
         val currentState = _uiState.value
         
-        // Validation
-        val validationError = validateSettings(currentState)
-        if (validationError != null) {
-            _uiState.update { it.copy(error = validationError) }
+        // Ensure configuration is complete and validated
+        if (!currentState.isConfigurationComplete()) {
+            _uiState.update { 
+                it.copy(error = AppError.InvalidSettings("Please complete all required fields")) 
+            }
             return
         }
         
-        // Ensure settings have been validated before saving
         if (currentState.validationStatus != ValidationStatus.SUCCESS) {
             _uiState.update { 
-                it.copy(
-                    error = AppError.InvalidSettings("Please validate your API key and model before saving")
-                ) 
+                it.copy(error = AppError.InvalidSettings("Please validate your configuration before saving")) 
             }
             return
         }
@@ -137,75 +198,47 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
             try {
-                val settings = AISettings(
-                    provider = currentState.provider,
-                    apiKey = currentState.apiKey,
-                    model = currentState.model,
-                    isValidated = true  // Mark as validated when saving
-                )
-                settingsRepository.saveSettings(settings)
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        isSaved = true,
-                        error = null
-                    )
+                val configuration = currentState.toAIConfiguration()
+                val result = aiConfigurationManager.saveConfiguration(configuration)
+                
+                if (result.isSuccess) {
+                    // Set as active configuration
+                    aiConfigurationManager.setActiveConfiguration(configuration)
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            isSaved = true,
+                            error = null
+                        )
+                    }
+                } else {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            error = AppError.StorageError(result.exceptionOrNull()?.message ?: "Failed to save configuration")
+                        )
+                    }
                 }
             } catch (e: Exception) {
-                val error = AppError.StorageError(e.message ?: "Failed to save settings")
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        error = error
+                        error = AppError.StorageError(e.message ?: "Failed to save configuration")
                     )
                 }
             }
         }
     }
 
-    private fun validateSettings(state: SettingsUiState): AppError? {
-        return when {
-            state.apiKey.isBlank() -> AppError.InvalidSettings("API key")
-            state.apiKey.length < 20 -> AppError.InvalidSettings("API key is too short")
-            !isValidApiKeyFormat(state.provider, state.apiKey) -> 
-                AppError.InvalidSettings("API key format is invalid for ${state.provider.name}")
-            state.model.isBlank() -> AppError.InvalidSettings("Model name")
-            state.model.length < 3 -> AppError.InvalidSettings("Model name is too short")
-            else -> null
-        }
-    }
-    
-    /**
-     * Validates API key format based on provider.
-     */
-    private fun isValidApiKeyFormat(provider: AIProvider, apiKey: String): Boolean {
-        return when (provider) {
-            AIProvider.OPENAI -> {
-                // OpenAI keys start with "sk-" and are alphanumeric with some special chars
-                apiKey.startsWith("sk-") && apiKey.length >= 40
-            }
-            AIProvider.ANTHROPIC -> {
-                // Anthropic keys start with "sk-ant-" 
-                apiKey.startsWith("sk-ant-") && apiKey.length >= 40
-            }
-            AIProvider.GOOGLE_AI -> {
-                // Google AI keys are typically 39 characters, alphanumeric
-                apiKey.length >= 30 && apiKey.all { it.isLetterOrDigit() || it == '-' || it == '_' }
-            }
-        }
-    }
-    
-    fun validateApiKey() {
+    fun validateConfiguration() {
         val currentState = _uiState.value
         
-        // Basic validation first
-        val validationError = validateSettings(currentState)
-        if (validationError != null) {
+        if (!currentState.isConfigurationComplete()) {
             _uiState.update { 
                 it.copy(
-                    error = validationError,
                     validationStatus = ValidationStatus.FAILED,
-                    validationMessage = validationError.toUserMessage()
+                    validationMessage = "Please complete all required fields",
+                    error = AppError.InvalidSettings("Configuration incomplete")
                 ) 
             }
             return
@@ -215,32 +248,41 @@ class SettingsViewModel @Inject constructor(
             _uiState.update { 
                 it.copy(
                     validationStatus = ValidationStatus.VALIDATING,
-                    validationMessage = "Testing API key and model...",
+                    validationMessage = "Testing configuration...",
                     error = null
                 ) 
             }
             
             try {
-                val result = aiRepository.validateApiKeyAndModel(
-                    provider = currentState.provider,
-                    apiKey = currentState.apiKey,
-                    model = currentState.model
-                )
+                val configuration = currentState.toAIConfiguration()
+                val validationResult = aiConfigurationManager.validateConfiguration(configuration)
                 
-                if (result.isSuccess) {
-                    _uiState.update {
-                        it.copy(
-                            validationStatus = ValidationStatus.SUCCESS,
-                            validationMessage = result.getOrNull() ?: "Validation successful"
-                        )
+                if (validationResult.isValid) {
+                    // Also test connection
+                    val connectionResult = aiConfigurationManager.testConnection(configuration)
+                    
+                    if (connectionResult.isConnected) {
+                        _uiState.update {
+                            it.copy(
+                                validationStatus = ValidationStatus.SUCCESS,
+                                validationMessage = "Configuration validated successfully"
+                            )
+                        }
+                    } else {
+                        _uiState.update {
+                            it.copy(
+                                validationStatus = ValidationStatus.FAILED,
+                                validationMessage = connectionResult.errorMessage ?: "Connection test failed",
+                                error = AppError.NetworkError(connectionResult.errorMessage ?: "Connection failed")
+                            )
+                        }
                     }
                 } else {
-                    val errorMessage = result.exceptionOrNull()?.message ?: "Validation failed"
                     _uiState.update {
                         it.copy(
                             validationStatus = ValidationStatus.FAILED,
-                            validationMessage = errorMessage,
-                            error = AppError.ApiError(errorMessage)
+                            validationMessage = validationResult.errorMessage ?: "Validation failed",
+                            error = AppError.InvalidSettings(validationResult.errorMessage ?: "Invalid configuration")
                         )
                     }
                 }
@@ -249,12 +291,47 @@ class SettingsViewModel @Inject constructor(
                     it.copy(
                         validationStatus = ValidationStatus.FAILED,
                         validationMessage = e.message ?: "Validation failed",
-                        error = AppError.ApiError(e.message ?: "Unknown error")
+                        error = AppError.NetworkError(e.message ?: "Unknown error")
                     )
                 }
             }
         }
     }
+
+    fun discoverModels() {
+        val currentState = _uiState.value
+        
+        if (currentState.baseUrl.isBlank()) {
+            _uiState.update { 
+                it.copy(error = AppError.InvalidSettings("Please enter a base URL first")) 
+            }
+            return
+        }
+        
+        viewModelScope.launch {
+            _uiState.update { it.copy(isDiscoveringModels = true, error = null) }
+            try {
+                val models = aiConfigurationManager.discoverLocalModels(
+                    provider = currentState.provider,
+                    baseUrl = currentState.baseUrl
+                )
+                _uiState.update {
+                    it.copy(
+                        isDiscoveringModels = false
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isDiscoveringModels = false,
+                        error = AppError.NetworkError(e.message ?: "Failed to discover models")
+                    )
+                }
+            }
+        }
+    }
+
+
 
     fun clearError() {
         _uiState.update { it.copy(error = null) }

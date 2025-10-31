@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -63,7 +64,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.voicenotesai.data.local.entity.Note
+import com.voicenotesai.domain.ai.ContentCategory
 import com.voicenotesai.presentation.components.toLocalizedMessage
+import com.voicenotesai.presentation.components.CategoryFilterRow
+import com.voicenotesai.presentation.components.NoteCard as ModernNoteCard
 // import com.voicenotesai.presentation.notes.components.BatchDeleteDialog
 // import com.voicenotesai.presentation.notes.components.EmptySearchState
 // import com.voicenotesai.presentation.notes.components.NotesExportDialog
@@ -90,6 +94,8 @@ fun NotesScreen(
     val uiState by viewModel.uiState.collectAsState()
     var noteToDelete by remember { mutableStateOf<Note?>(null) }
     var searchQuery by remember { mutableStateOf("") }
+    var selectedCategories by remember { mutableStateOf(setOf<ContentCategory>()) }
+    var showCategoryFilter by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
 
     Scaffold(
@@ -130,6 +136,18 @@ fun NotesScreen(
                             contentDescription = null
                         )
                     }
+                },
+                actions = {
+                    IconButton(
+                        onClick = { showCategoryFilter = !showCategoryFilter }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.FilterList,
+                            contentDescription = "Filter by category",
+                            tint = if (selectedCategories.isNotEmpty()) MaterialTheme.colorScheme.primary 
+                                   else MaterialTheme.colorScheme.onSurface
+                        )
+                    }
                 }
             )
         },
@@ -146,7 +164,24 @@ fun NotesScreen(
 				onSearchQueryChange = { searchQuery = it },
 				modifier = Modifier
 					.padding(Spacing.medium)
-			)            // Notes content with basic filtering
+			)
+			
+			// Category filter row
+			if (showCategoryFilter) {
+				CategoryFilterRow(
+					categories = ContentCategory.getPrimaryCategories(),
+					selectedCategories = selectedCategories,
+					onCategoryToggle = { category ->
+						selectedCategories = if (category in selectedCategories) {
+							selectedCategories - category
+						} else {
+							selectedCategories + category
+						}
+					},
+					allowMultipleSelection = true,
+					modifier = Modifier.padding(bottom = 8.dp)
+				)
+			}            // Notes content with basic filtering
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -168,19 +203,36 @@ fun NotesScreen(
                         }
                     }
                     is NotesUiState.Success -> {
-                        val filteredNotes = if (searchQuery.isNotEmpty()) {
-                            state.notes.filter { note ->
+                        val filteredNotes = state.notes.filter { note ->
+                            // Search filter
+                            val matchesSearch = if (searchQuery.isNotEmpty()) {
                                 note.content.contains(searchQuery, ignoreCase = true) ||
                                         note.transcribedText?.contains(searchQuery, ignoreCase = true) == true
+                            } else {
+                                true
                             }
-                        } else {
-                            state.notes
+                            
+                            // Category filter
+                            val matchesCategory = if (selectedCategories.isNotEmpty()) {
+                                val noteCategory = try {
+                                    ContentCategory.valueOf(note.category)
+                                } catch (e: IllegalArgumentException) {
+                                    ContentCategory.OTHER
+                                }
+                                noteCategory in selectedCategories
+                            } else {
+                                true
+                            }
+                            
+                            matchesSearch && matchesCategory
                         }
                         
-                        if (filteredNotes.isEmpty() && searchQuery.isNotEmpty()) {
-                            EmptySearchState(
+                        if (filteredNotes.isEmpty() && (searchQuery.isNotEmpty() || selectedCategories.isNotEmpty())) {
+                            EmptyFilterState(
                                 searchQuery = searchQuery,
+                                selectedCategories = selectedCategories,
                                 onClearSearch = { searchQuery = "" },
+                                onClearCategories = { selectedCategories = emptySet() },
                                 modifier = Modifier.align(Alignment.Center)
                             )
                         } else {
@@ -271,10 +323,21 @@ private fun NotesList(
         }
 		
 		items(notes, key = { it.id }) { note ->
-            NoteCard(
-                note = note,
+            val noteCategory = try {
+                ContentCategory.valueOf(note.category)
+            } catch (e: IllegalArgumentException) {
+                ContentCategory.OTHER
+            }
+            
+            ModernNoteCard(
+                title = note.content.lines().firstOrNull()?.take(50) ?: "Untitled Note",
+                preview = note.content.take(150).replace("\n", " "),
+                duration = formatDuration(note.duration),
+                tags = note.tags.split(",").filter { it.isNotBlank() }.take(3),
+                category = noteCategory,
+                hasActionItems = false, // TODO: Check if note has tasks
                 onClick = { onNoteClick(note.id) },
-                onDeleteClick = { onDeleteClick(note) }
+                onMoreClick = { onDeleteClick(note) }
             )
         }
     }
@@ -407,6 +470,74 @@ private fun EmptySearchState(
 }
 
 @Composable
+private fun EmptyFilterState(
+    searchQuery: String,
+    selectedCategories: Set<ContentCategory>,
+    onClearSearch: () -> Unit,
+    onClearCategories: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .padding(horizontal = Spacing.extraLarge)
+            .border(
+                width = 3.dp,
+                color = MaterialTheme.colorScheme.outline,
+                shape = RoundedCornerShape(28.dp)
+            )
+            .background(
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                shape = RoundedCornerShape(28.dp)
+            )
+            .padding(Spacing.huge)
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(Spacing.medium)
+        ) {
+            Text(
+                text = "No matching notes",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.ExtraBold
+            )
+            
+            val filterDescription = buildString {
+                if (searchQuery.isNotEmpty()) {
+                    append("searching for \"$searchQuery\"")
+                }
+                if (selectedCategories.isNotEmpty()) {
+                    if (searchQuery.isNotEmpty()) append(" and ")
+                    append("filtering by ${selectedCategories.joinToString(", ") { it.displayName }}")
+                }
+            }
+            
+            Text(
+                text = "No notes found $filterDescription",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                fontWeight = FontWeight.Medium
+            )
+            
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                if (searchQuery.isNotEmpty()) {
+                    TextButton(onClick = onClearSearch) {
+                        Text("Clear Search")
+                    }
+                }
+                if (selectedCategories.isNotEmpty()) {
+                    TextButton(onClick = onClearCategories) {
+                        Text("Clear Filters")
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun EmptyState(modifier: Modifier = Modifier) {
     Surface(
         modifier = modifier
@@ -466,4 +597,11 @@ private fun DeleteConfirmationDialog(
 private fun formatTimestamp(timestamp: Long): String {
     val sdf = SimpleDateFormat("MMM dd, yyyy · hh:mm a", Locale.getDefault())
     return sdf.format(Date(timestamp))
+}
+
+private fun formatDuration(duration: Long): String {
+    if (duration <= 0) return "0:00"
+    val minutes = (duration / 60000).toInt()
+    val seconds = ((duration % 60000) / 1000).toInt()
+    return "$minutes:${seconds.toString().padStart(2, '0')}"
 }

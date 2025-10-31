@@ -9,7 +9,7 @@ import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface GoogleAIService {
-    @POST("v1/models/{model}:generateContent")
+    @POST("models/{model}:generateContent")
     suspend fun generateContent(
         @Path("model") model: String,
         @Query("key") apiKey: String,

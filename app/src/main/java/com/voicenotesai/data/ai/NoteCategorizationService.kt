@@ -349,6 +349,44 @@ class NoteCategorizationService @Inject constructor(
         
         // Add category-based tags
         when (categorization.primaryCategory) {
+            ContentCategory.WORK -> {
+                tags.addAll(listOf("work", "business", "professional"))
+            }
+            ContentCategory.PERSONAL -> {
+                tags.addAll(listOf("personal", "private", "thoughts"))
+                if (fullText.contains("growth")) tags.add("growth")
+            }
+            ContentCategory.IDEAS -> {
+                tags.addAll(listOf("ideas", "creative", "brainstorming"))
+                if (fullText.contains("innovation")) tags.add("innovation")
+            }
+            ContentCategory.MEETINGS -> {
+                tags.addAll(listOf("meeting", "discussion", "team"))
+                if (fullText.contains("action")) tags.add("action-items")
+                if (fullText.contains("decision")) tags.add("decisions")
+            }
+            ContentCategory.SHOPPING -> {
+                tags.addAll(listOf("shopping", "purchase", "list"))
+            }
+            ContentCategory.TASKS -> {
+                tags.addAll(listOf("tasks", "planning", "todo"))
+                if (fullText.contains("priority")) tags.add("priority")
+                if (fullText.contains("urgent")) tags.add("urgent")
+            }
+            ContentCategory.RESEARCH -> {
+                tags.addAll(listOf("research", "analysis", "study"))
+                if (fullText.contains("data")) tags.add("data")
+            }
+            ContentCategory.EDUCATION -> {
+                tags.addAll(listOf("education", "learning", "study"))
+            }
+            ContentCategory.HEALTH -> {
+                tags.addAll(listOf("health", "wellness", "medical"))
+            }
+            ContentCategory.TRAVEL -> {
+                tags.addAll(listOf("travel", "trip", "journey"))
+            }
+            // Legacy categories
             ContentCategory.MEETING -> {
                 tags.addAll(listOf("meeting", "discussion", "team"))
                 if (fullText.contains("action")) tags.add("action-items")

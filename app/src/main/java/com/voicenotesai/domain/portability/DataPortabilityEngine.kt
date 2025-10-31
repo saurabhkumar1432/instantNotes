@@ -41,6 +41,8 @@ sealed class ExportFormat {
     object CSV : ExportFormat()
     object Markdown : ExportFormat()
     object PDF : ExportFormat()
+    object Word : ExportFormat()
+    object PlainText : ExportFormat()
     data class Custom(val template: String) : ExportFormat()
 }
 

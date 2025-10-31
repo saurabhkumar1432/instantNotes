@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="8dp"
+    android:background="@drawable/widget_background">
+
+    <!-- Widget Header -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingBottom="8dp">
+
+        <ImageView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/ic_mic"
+            android:contentDescription="Voice Notes Icon" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:text="Voice Notes"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="@color/widget_text_primary" />
+
+    </LinearLayout>
+
+    <!-- Quick Record Button -->
+    <Button
+        android:id="@+id/widget_quick_record_button"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginBottom="4dp"
+        android:text="🎤 Quick Record"
+        android:textSize="14sp"
+        android:textColor="@color/white"
+        android:background="@drawable/widget_button_primary"
+        android:elevation="2dp" />
+
+    <!-- Action Buttons Row -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:weightSum="2">
+
+        <Button
+            android:id="@+id/widget_view_notes_button"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="2dp"
+            android:text="📝 Notes"
+            android:textSize="12sp"
+            android:textColor="@color/widget_text_primary"
+            android:background="@drawable/widget_button_secondary"
+            android:elevation="1dp" />
+
+        <Button
+            android:id="@+id/widget_view_tasks_button"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="1"
+            android:layout_marginStart="2dp"
+            android:text="✓ Tasks"
+            android:textSize="12sp"
+            android:textColor="@color/widget_text_primary"
+            android:background="@drawable/widget_button_secondary"
+            android:elevation="1dp" />
+
+    </LinearLayout>
+
+</LinearLayout>

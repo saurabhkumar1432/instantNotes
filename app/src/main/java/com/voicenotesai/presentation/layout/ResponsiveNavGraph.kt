@@ -1,14 +1,20 @@
 package com.voicenotesai.presentation.layout
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -42,7 +48,7 @@ fun ResponsiveNavGraph(
             )
         }
         // Adaptive navigation for main app screens
-        currentRoute in listOf("main", "notes", "settings") -> {
+        currentRoute in listOf("home", "recording", "notes", "tasks", "settings", "analytics") -> {
             AdaptiveScaffold(
                 currentRoute = currentRoute,
                 onNavigationClick = { route ->
@@ -106,7 +112,7 @@ private fun TwoPaneNotesLayout(
                 // Notes list in primary pane
                 NotesScreen(
                     onNavigateBack = {
-                        navController.navigate("main") {
+                        navController.navigate("home") {
                             popUpTo("notes") { inclusive = true }
                         }
                     },
@@ -153,9 +159,9 @@ private fun StandardNavHost(
             LaunchedEffect(uiState.isLoading) {
                 if (!uiState.isLoading) {
                     if (uiState.apiKey.isNotBlank() && 
-                        uiState.model.isNotBlank() &&
+                        uiState.modelName.isNotBlank() &&
                         uiState.validationStatus == com.voicenotesai.presentation.settings.ValidationStatus.SUCCESS) {
-                        navController.navigate("main") {
+                        navController.navigate("home") {
                             popUpTo("setup_check") { inclusive = true }
                         }
                     } else {
@@ -181,20 +187,20 @@ private fun StandardNavHost(
                     navController.navigate("settings")
                 },
                 onNavigateToMain = {
-                    navController.navigate("main") {
+                    navController.navigate("home") {
                         popUpTo("onboarding") { inclusive = true }
                     }
                 },
                 onStartFirstRecording = {
-                    navController.navigate("main") {
+                    navController.navigate("recording") {
                         popUpTo("onboarding") { inclusive = true }
                     }
                 }
             )
         }
         
-        // Main recording screen
-        composable("main") {
+        // Home screen - main dashboard
+        composable("home") {
             MainScreen(
                 onNavigateToSettings = {
                     navController.navigate("settings")
@@ -205,6 +211,78 @@ private fun StandardNavHost(
             )
         }
         
+        // Recording screen - dedicated recording interface
+        composable("recording") {
+            MainScreen(
+                onNavigateToSettings = {
+                    navController.navigate("settings")
+                },
+                onNavigateToNotes = {
+                    navController.navigate("notes")
+                }
+            )
+        }
+        
+        // Tasks screen
+        composable("tasks") {
+            // TODO: Implement TasksScreen when created in later tasks
+            // For now, show a placeholder
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = "Tasks Screen",
+                        style = MaterialTheme.typography.headlineMedium
+                    )
+                    Text(
+                        text = "Coming soon in Phase 3",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Button(
+                        onClick = { navController.popBackStack() }
+                    ) {
+                        Text("Back")
+                    }
+                }
+            }
+        }
+        
+        // Analytics screen
+        composable("analytics") {
+            // TODO: Implement AnalyticsScreen when created in later tasks
+            // For now, show a placeholder
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = "Analytics Screen",
+                        style = MaterialTheme.typography.headlineMedium
+                    )
+                    Text(
+                        text = "Coming soon in Phase 6",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Button(
+                        onClick = { navController.popBackStack() }
+                    ) {
+                        Text("Back")
+                    }
+                }
+            }
+        }
+        
         // Settings screen
         composable("settings") {
             val settingsViewModel: SettingsViewModel = hiltViewModel()
@@ -212,7 +290,7 @@ private fun StandardNavHost(
             
             LaunchedEffect(uiState.isSaved) {
                 if (uiState.isSaved && uiState.validationStatus == com.voicenotesai.presentation.settings.ValidationStatus.SUCCESS) {
-                    navController.navigate("main") {
+                    navController.navigate("home") {
                         popUpTo("settings") { inclusive = true }
                     }
                 }

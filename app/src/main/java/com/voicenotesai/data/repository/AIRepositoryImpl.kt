@@ -11,6 +11,7 @@ import com.voicenotesai.data.remote.model.AnthropicMessage
 import com.voicenotesai.data.remote.model.AnthropicRequest
 import com.voicenotesai.data.remote.model.GoogleAIContent
 import com.voicenotesai.data.remote.model.GoogleAIErrorResponse
+import com.voicenotesai.data.remote.model.GoogleAIGenerationConfig
 import com.voicenotesai.data.remote.model.GoogleAIPart
 import com.voicenotesai.data.remote.model.GoogleAIRequest
 import com.voicenotesai.data.remote.model.OpenAIErrorResponse
@@ -175,6 +176,10 @@ class AIRepositoryImpl @Inject constructor(
                     parts = listOf(GoogleAIPart(text = formattedPrompt)),
                     role = "user"
                 )
+            ),
+            generationConfig = GoogleAIGenerationConfig(
+                temperature = 0.7,
+                maxOutputTokens = 1024
             )
         )
 
@@ -407,6 +412,10 @@ class AIRepositoryImpl @Inject constructor(
                     parts = listOf(GoogleAIPart(text = VALIDATION_TEST_TEXT)),
                     role = "user"
                 )
+            ),
+            generationConfig = GoogleAIGenerationConfig(
+                temperature = 0.7,
+                maxOutputTokens = 10
             )
         )
 

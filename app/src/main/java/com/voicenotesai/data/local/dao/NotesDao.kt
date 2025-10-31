@@ -225,6 +225,50 @@ interface NotesDao {
      */
     @Query("SELECT COUNT(*) FROM notes WHERE 1=0")
     suspend fun triggerAnalyze(): Int
+    
+    /**
+     * Gets notes by category for category management.
+     * 
+     * @param category The category name
+     * @return Flow of notes in the specified category
+     */
+    @Query("SELECT * FROM notes WHERE category = :category AND isArchived = 0 ORDER BY timestamp DESC")
+    fun getNotesByCategory(category: String): Flow<List<Note>>
+    
+    /**
+     * Gets count of notes by category.
+     * 
+     * @param category The category name
+     * @return Count of notes in the category
+     */
+    @Query("SELECT COUNT(*) FROM notes WHERE category = :category AND isArchived = 0")
+    suspend fun getNotesCountByCategory(category: String): Int
+    
+    /**
+     * Gets category distribution for analytics.
+     * 
+     * @return List of category distribution data
+     */
+    @Query("SELECT category, COUNT(*) as count FROM notes WHERE isArchived = 0 GROUP BY category")
+    suspend fun getCategoryDistribution(): List<CategoryCount>
+    
+    /**
+     * Updates the category of a note.
+     * 
+     * @param noteId The ID of the note
+     * @param category The new category
+     * @param timestamp The modification timestamp
+     */
+    @Query("UPDATE notes SET category = :category, lastModified = :timestamp WHERE id = :noteId")
+    suspend fun updateNoteCategory(noteId: Long, category: String, timestamp: Long = System.currentTimeMillis())
+    
+    /**
+     * Gets all unique categories used in notes.
+     * 
+     * @return List of unique category names
+     */
+    @Query("SELECT DISTINCT category FROM notes WHERE isArchived = 0 AND category IS NOT NULL AND category != ''")
+    suspend fun getAllUsedCategories(): List<String>
 }
 
 
@@ -239,4 +283,12 @@ data class DatabaseStats(
     val avgContentLength: Double,
     val latestTimestamp: Long,
     val oldestTimestamp: Long
+)
+/**
+
+ * Data class for category count results from Room queries.
+ */
+data class CategoryCount(
+    val category: String,
+    val count: Int
 )

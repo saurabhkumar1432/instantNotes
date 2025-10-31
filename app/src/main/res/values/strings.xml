@@ -124,6 +124,7 @@
     <string name="export_desc_text">Simple text format, easy to read</string>
     <string name="export_desc_markdown">Formatted text with headers</string>
     <string name="export_desc_json">Structured data format</string>
+    <string name="export_desc_pdf">Professional document format</string>
     <!-- Notes filter and sort labels -->
     <string name="filter_all_notes">All Notes</string>
     <string name="filter_today">Today</string>
@@ -207,6 +208,7 @@
     <string name="duration_minutes_seconds_format">%1$d minutes and %2$d seconds</string>
     <string name="duration_seconds_format">%1$d seconds</string>
     <string name="start_voice_recording">Start voice recording</string>
+    <string name="new_recording_title">New Recording</string>
     <string name="recording_in_progress">Recording in progress</string>
     <string name="ready_to_record">Ready to record</string>
     <!-- note_card_desc_format already defined earlier as the canonical preview description -->
@@ -344,4 +346,232 @@
     <string name="compact">Compact</string>
     <string name="spacious">Spacious</string>
     <string name="current_spacing">Current: %1$s</string>
+    
+    <!-- New home screen strings -->
+    <string name="search_notes_placeholder">Search notes...</string>
+    <string name="stats_notes">Notes</string>
+    <string name="stats_tasks">Tasks</string>
+    <string name="stats_total_time">Total Time</string>
+    <string name="stats_this_week">This Week</string>
+    <string name="recent_notes_header">RECENT NOTES</string>
+    <string name="no_notes_yet">No notes yet</string>
+    <string name="tap_plus_to_record">Tap the + button to create your first note</string>
+    
+    <!-- Filter options -->
+    <string name="filter_all">All</string>
+    <string name="filter_recent">Recent</string>
+    <string name="filter_archived">Archived</string>
+    <string name="filter_favorites">Favorites</string>
+    <string name="filter_with_tasks">With Tasks</string>
+    
+    <!-- Sort options -->
+    <string name="sort_date_newest">Newest First</string>
+    <string name="sort_date_oldest">Oldest First</string>
+    <string name="sort_title_a_z">Title A-Z</string>
+    <string name="sort_title_z_a">Title Z-A</string>
+    <string name="sort_duration_longest">Longest First</string>
+    <string name="sort_duration_shortest">Shortest First</string>
+    
+    <!-- Export format options -->
+    <string name="export_format_text">Plain Text</string>
+    <string name="export_format_markdown">Markdown</string>
+    <string name="export_format_json">JSON</string>
+    <string name="export_format_pdf">PDF</string>
+    
+    <!-- Widget strings -->
+    <string name="widget_description">Quick access to voice recording and recent notes</string>
+    <string name="widget_quick_record">Quick Record</string>
+    <string name="widget_view_notes">Notes</string>
+    <string name="widget_view_tasks">Tasks</string>
+    
+    <!-- Shortcut strings -->
+    <string name="shortcut_quick_record_long">Start Recording Voice Note</string>
+    <string name="shortcut_quick_record_disabled">Recording is currently unavailable</string>
+    <string name="shortcut_view_tasks_long">View Pending Tasks</string>
+    <string name="shortcut_view_tasks_disabled">Tasks are currently unavailable</string>
+    <string name="shortcut_recent_notes_short">Recent Notes</string>
+    <string name="shortcut_recent_notes_long">View Recent Voice Notes</string>
+    <string name="shortcut_recent_notes_disabled">Notes are currently unavailable</string>
+    
+    <!-- Sharing and Export strings -->
+    <string name="share_note_title">Share Note</string>
+    <string name="share_as_text">Share as Text</string>
+    <string name="share_as_text_description">Quick share as plain text message</string>
+    <string name="export_formats">Export Formats</string>
+    <string name="export_format_pdf_description">Professional document format</string>
+    <string name="export_format_word">Word Document</string>
+    <string name="export_format_word_description">Rich text format for editing</string>
+    <string name="export_format_markdown_description">Formatted text with headers</string>
+    <string name="export_format_text_description">Simple text format</string>
+    <string name="share_to_apps">Share to Apps</string>
+    <string name="share_to_email">Email</string>
+    <string name="share_to_email_description">Send via email app</string>
+    <string name="share_to_whatsapp">WhatsApp</string>
+    <string name="share_to_whatsapp_description">Share to WhatsApp chat</string>
+    <string name="share_to_drive">Google Drive</string>
+    <string name="share_to_drive_description">Save to Google Drive</string>
+    <string name="share_to_slack">Slack</string>
+    <string name="share_to_slack_description">Share to Slack workspace</string>
+    <string name="advanced_sharing">Advanced Sharing</string>
+    <string name="create_shareable_link">Create Shareable Link</string>
+    <string name="create_shareable_link_description">Generate a link to share online</string>
+    <string name="create_calendar_event">Create Calendar Event</string>
+    <string name="create_calendar_event_description">Add to calendar from meeting notes</string>
+    <string name="close">Close</string>
+    
+    <!-- Shareable Link Dialog strings -->
+    <string name="shareable_link_created">Shareable link created successfully!</string>
+    <string name="copy_link">Copy Link</string>
+    <string name="link_sharing_notice">Anyone with this link can view your note. Share responsibly.</string>
+    <string name="link_expiration">Link Expiration</string>
+    <string name="additional_options">Additional Options</string>
+    <string name="require_password">Require Password</string>
+    <string name="require_password_description">Protect link with a password</string>
+    <string name="allow_download">Allow Download</string>
+    <string name="allow_download_description">Let viewers download the note</string>
+    <string name="create_link">Create Link</string>
+    <string name="expiration_1_hour">1 Hour</string>
+    <string name="expiration_1_day">1 Day</string>
+    <string name="expiration_1_week">1 Week</string>
+    <string name="expiration_1_month">1 Month</string>
+    <string name="expiration_never">Never</string>
+    
+    <!-- Calendar Event Dialog strings -->
+    <string name="ai_suggested_event_details">AI suggested event details</string>
+    <string name="event_title">Event Title</string>
+    <string name="event_description">Event Description</string>
+    <string name="event_location">Location</string>
+    <string name="start_time">Start Time</string>
+    <string name="end_time">End Time</string>
+    <string name="date">Date</string>
+    <string name="time">Time</string>
+    <string name="attendees">Attendees</string>
+    <string name="attendees_placeholder">Enter email addresses separated by commas</string>
+    <string name="create_event">Create Event</string>
+    
+    <!-- Sync and Backup strings -->
+    <string name="retry_sync">Retry sync</string>
+    <string name="sync_settings">Sync settings</string>
+    <string name="sync_conflict_detected">Sync Conflict Detected</string>
+    <string name="conflict_details">Conflict Details</string>
+    <string name="local_version">Local Version</string>
+    <string name="remote_version">Remote Version</string>
+    <string name="choose_resolution">Choose Resolution</string>
+    <string name="use_local_version">Use Local Version</string>
+    <string name="use_local_description">Keep the version on this device</string>
+    <string name="use_remote_version">Use Remote Version</string>
+    <string name="use_remote_description">Use the version from cloud storage</string>
+    <string name="merge_versions">Merge Versions</string>
+    <string name="merge_description">Automatically combine both versions</string>
+    <string name="skip_for_now">Skip for Now</string>
+    <string name="skip_description">Resolve this conflict later</string>
+    <string name="offline">Offline</string>
+    <string name="wifi_connected">WiFi Connected</string>
+    <string name="mobile_connected">Mobile Connected</string>
+    <string name="mobile_metered">Mobile (Metered)</string>
+    <string name="connected">Connected</string>
+    <string name="sync_details">Sync Details</string>
+    <string name="cloud_providers">Cloud Providers</string>
+    <string name="last_backup">Last Backup</string>
+    <string name="cloud_storage_used">Cloud Storage Used</string>
+    <string name="pending_operations">Pending Operations</string>
+
+    <!-- Enhanced Accessibility Content Descriptions -->
+    <string name="gradient_header_content_desc">App header with title %1$s</string>
+    <string name="user_avatar_content_desc">User avatar with initials %1$s</string>
+    <string name="search_bar_content_desc">Search notes by typing keywords</string>
+    <string name="search_clear_content_desc">Clear search text</string>
+    <string name="stats_card_content_desc">%1$s statistic showing %2$s</string>
+    <string name="note_card_content_desc">Note titled %1$s, created %2$s, duration %3$s</string>
+    <string name="note_card_with_tasks_content_desc">Note titled %1$s, created %2$s, duration %3$s, contains action items</string>
+    <string name="task_card_content_desc">Task: %1$s, %2$s, from note %3$s</string>
+    <string name="task_completed_content_desc">Completed task: %1$s</string>
+    <string name="task_pending_content_desc">Pending task: %1$s</string>
+    <string name="task_checkbox_content_desc">Mark task as %1$s</string>
+    <string name="task_delete_content_desc">Delete task: %1$s</string>
+    <string name="priority_indicator_content_desc">Priority: %1$s</string>
+    <string name="waveform_visualizer_content_desc">Audio waveform showing %1$s recording activity</string>
+    <string name="recording_timer_content_desc">Recording duration: %1$s</string>
+    <string name="recording_status_content_desc">Recording status: %1$s</string>
+    <string name="floating_action_button_content_desc">Start new voice recording</string>
+    <string name="navigation_back_content_desc">Go back to previous screen</string>
+    <string name="more_options_content_desc">More options for %1$s</string>
+    <string name="tag_chip_content_desc">Tag: %1$s</string>
+    <string name="category_indicator_content_desc">Category: %1$s</string>
+    <string name="filter_chip_content_desc">Filter by %1$s, currently %2$s</string>
+    <string name="sort_option_content_desc">Sort by %1$s</string>
+    <string name="export_option_content_desc">Export as %1$s format</string>
+    <string name="settings_item_content_desc">%1$s setting, current value: %2$s</string>
+    <string name="settings_toggle_content_desc">%1$s toggle, currently %2$s</string>
+    <string name="validation_button_content_desc">Validate %1$s configuration</string>
+    <string name="validation_status_content_desc">Validation status: %1$s</string>
+    <string name="ai_provider_dropdown_content_desc">Select AI provider, currently %1$s</string>
+    <string name="model_dropdown_content_desc">Select AI model, currently %1$s</string>
+    <string name="api_key_field_content_desc">Enter API key for %1$s</string>
+    <string name="base_url_field_content_desc">Enter base URL for %1$s</string>
+    <string name="custom_headers_content_desc">Configure custom headers for API requests</string>
+    
+    <!-- Accessibility State Descriptions -->
+    <string name="selected_state">selected</string>
+    <string name="unselected_state">unselected</string>
+    <string name="enabled_state">enabled</string>
+    <string name="disabled_state">disabled</string>
+    <string name="expanded_state">expanded</string>
+    <string name="collapsed_state">collapsed</string>
+    <string name="loading_state">loading</string>
+    <string name="error_state">error</string>
+    <string name="success_state">success</string>
+    <string name="active_state">active</string>
+    <string name="inactive_state">inactive</string>
+    <string name="completed_state">completed</string>
+    <string name="pending_state">pending</string>
+    <string name="recording_state">recording</string>
+    <string name="stopped_state">stopped</string>
+    <string name="paused_state">paused</string>
+    <string name="processing_state">processing</string>
+    <string name="connected_state">connected</string>
+    <string name="disconnected_state">disconnected</string>
+    <string name="valid_state">valid</string>
+    <string name="invalid_state">invalid</string>
+    
+    <!-- Voice Command Accessibility -->
+    <string name="voice_command_listening">Listening for voice commands</string>
+    <string name="voice_command_not_listening">Voice commands not active</string>
+    <string name="voice_command_recognized">Voice command recognized: %1$s</string>
+    <string name="voice_command_not_recognized">Voice command not recognized</string>
+    <string name="voice_command_executed">Command executed: %1$s</string>
+    <string name="voice_command_failed">Command failed: %1$s</string>
+    <string name="available_voice_commands">Available voice commands: %1$s</string>
+    
+    <!-- Screen Reader Announcements -->
+    <string name="screen_changed_announcement">Screen changed to %1$s</string>
+    <string name="recording_started_announcement">Recording started</string>
+    <string name="recording_stopped_announcement">Recording stopped, duration %1$s</string>
+    <string name="note_saved_announcement">Note saved successfully</string>
+    <string name="task_completed_announcement">Task marked as completed</string>
+    <string name="task_uncompleted_announcement">Task marked as pending</string>
+    <string name="search_results_announcement">Found %1$d results for %2$s</string>
+    <string name="no_search_results_announcement">No results found for %1$s</string>
+    <string name="filter_applied_announcement">Filter applied: %1$s</string>
+    <string name="sort_applied_announcement">Sort applied: %1$s</string>
+    <string name="settings_saved_announcement">Settings saved successfully</string>
+    <string name="validation_success_announcement">Validation successful</string>
+    <string name="validation_failed_announcement">Validation failed: %1$s</string>
+    <string name="error_occurred_announcement">Error occurred: %1$s</string>
+    <string name="loading_started_announcement">Loading started</string>
+    <string name="loading_completed_announcement">Loading completed</string>
+    
+    <!-- High Contrast Mode Labels -->
+    <string name="high_contrast_enabled">High contrast mode enabled</string>
+    <string name="high_contrast_disabled">High contrast mode disabled</string>
+    <string name="contrast_ratio_good">Good contrast ratio</string>
+    <string name="contrast_ratio_poor">Poor contrast ratio, consider enabling high contrast mode</string>
+    
+    <!-- Focus Navigation -->
+    <string name="focus_moved_to">Focus moved to %1$s</string>
+    <string name="focus_trapped_in">Focus is within %1$s</string>
+    <string name="focus_escaped_from">Focus left %1$s</string>
+    <string name="keyboard_navigation_hint">Use arrow keys to navigate, Enter to select, Escape to go back</string>
+    <string name="touch_exploration_hint">Double tap to activate, swipe to explore</string>
 </resources>
+

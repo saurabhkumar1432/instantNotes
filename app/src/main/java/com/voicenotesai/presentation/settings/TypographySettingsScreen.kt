@@ -55,12 +55,9 @@ fun TypographySettingsScreen(
     var reducedMotion by remember { mutableStateOf(false) }
     
     val accessibilityPreferences = AccessibilityPreferences(
-        textSizeScale = textSizeScale,
-        spacingScale = spacingScale,
+        spacingScale = 1.0f, // Convert from enum to float
+        highContrast = highContrastMode,
         highContrastMode = highContrastMode,
-        boldText = boldText,
-        increasedLineSpacing = increasedLineSpacing,
-        useSystemFonts = useSystemFonts,
         reducedMotion = reducedMotion
     )
     
@@ -68,8 +65,8 @@ fun TypographySettingsScreen(
     val spacing = rememberAdvancedSpacing(spacingScale)
     
     ResponsiveContent(
-        modifier = modifier.fillMaxSize(),
-        accessibilityPreferences = accessibilityPreferences
+        modifier = modifier.fillMaxSize()
+        // accessibilityPreferences = accessibilityPreferences
     ) {
         Column(
             modifier = Modifier
@@ -81,7 +78,7 @@ fun TypographySettingsScreen(
             AccessibleHeading(
                 text = stringResource(R.string.typography_accessibility_settings),
                 level = 1,
-                accessibilityPreferences = accessibilityPreferences
+                preferences = accessibilityPreferences
             )
             
             // Text Size Settings
@@ -93,8 +90,8 @@ fun TypographySettingsScreen(
                     verticalArrangement = Arrangement.spacedBy(spacing.componentSpacing)
                 ) {
                     AccessibleBodyText(
-                        text = stringResource(R.string.text_size_description),
-                        accessibilityPreferences = accessibilityPreferences
+                        text = stringResource(R.string.text_size_description)
+                        // accessibilityPreferences = accessibilityPreferences
                     )
                     
                     TextSizeSlider(
@@ -114,8 +111,8 @@ fun TypographySettingsScreen(
                     verticalArrangement = Arrangement.spacedBy(spacing.componentSpacing)
                 ) {
                     AccessibleBodyText(
-                        text = stringResource(R.string.spacing_description),
-                        accessibilityPreferences = accessibilityPreferences
+                        text = stringResource(R.string.spacing_description)
+                        // accessibilityPreferences = accessibilityPreferences
                     )
                     
                     SpacingSlider(

@@ -7,13 +7,14 @@ import com.voicenotesai.data.local.entity.Note
 import com.voicenotesai.data.repository.NotesRepository
 import com.voicenotesai.data.repository.RecordingState
 import com.voicenotesai.data.repository.SettingsRepository
+import com.voicenotesai.data.repository.TaskRepository
 import com.voicenotesai.domain.model.AppError
 import com.voicenotesai.domain.model.canRetry
 import com.voicenotesai.domain.model.shouldNavigateToSettings
 import com.voicenotesai.domain.model.toUserMessage
 import com.voicenotesai.domain.usecase.GenerateNotesUseCase
 import com.voicenotesai.domain.usecase.RecordVoiceUseCase
-import com.voicenotesai.presentation.performance.OptimizedViewModel
+
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -31,8 +32,9 @@ class MainViewModel @Inject constructor(
     private val generateNotesUseCase: GenerateNotesUseCase,
     private val notesRepository: NotesRepository,
     private val settingsRepository: SettingsRepository,
+    private val taskRepository: TaskRepository,
     private val savedStateHandle: SavedStateHandle
-) : OptimizedViewModel() {
+) : ViewModel() {
 
     companion object {
         private const val KEY_TRANSCRIBED_TEXT = "transcribed_text"
@@ -40,7 +42,7 @@ class MainViewModel @Inject constructor(
     }
 
     private val _uiState = MutableStateFlow<MainUiState>(MainUiState.Idle)
-    val uiState: StateFlow<MainUiState> = _uiState.asOptimizedStateFlow()
+    val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()
 
     private var currentTranscribedText: String?
         get() = savedStateHandle.get<String>(KEY_TRANSCRIBED_TEXT)
@@ -78,17 +80,27 @@ class MainViewModel @Inject constructor(
      * Checks if AI settings are configured on initialization.
      */
     private fun checkSettings() {
-        safeLaunch(
-            onError = { error ->
-                _uiState.value = MainUiState.Error(AppError.SettingsNotConfigured)
-            }
-        ) {
-            val hasSettings = settingsRepository.hasValidSettings()
-            if (!hasSettings) {
+        viewModelScope.launch {
+            try {
+                val hasSettings = settingsRepository.hasValidSettings()
+                if (!hasSettings) {
+                    _uiState.value = MainUiState.Error(AppError.SettingsNotConfigured)
+                }
+            } catch (error: Exception) {
                 _uiState.value = MainUiState.Error(AppError.SettingsNotConfigured)
             }
         }
     }
+
+    /**
+     * Get all recent notes for the home screen.
+     */
+    fun getAllRecentNotes() = notesRepository.getAllNotes()
+
+    /**
+     * Get the count of pending tasks for the home screen stats.
+     */
+    fun getPendingTasksCount() = taskRepository.getPendingTasksCount()
 
     /**
      * Starts the voice recording process.
@@ -97,27 +109,23 @@ class MainViewModel @Inject constructor(
         recordingRequested = true
         
         // Check if settings are configured
-        safeLaunch(
-            onError = { error ->
-                _uiState.value = MainUiState.Error(AppError.SettingsNotConfigured)
-                recordingRequested = false
-            }
-        ) {
-            if (!settingsRepository.hasValidSettings()) {
-                _uiState.value = MainUiState.Error(AppError.SettingsNotConfigured)
-                recordingRequested = false
-                return@safeLaunch
-            }
+        viewModelScope.launch {
+            try {
+                if (!settingsRepository.hasValidSettings()) {
+                    _uiState.value = MainUiState.Error(AppError.SettingsNotConfigured)
+                    recordingRequested = false
+                    return@launch
+                }
 
             // Check permission
             if (!recordVoiceUseCase.hasPermission()) {
                 _uiState.value = MainUiState.PermissionRequired
                 // Don't reset recordingRequested here - we'll start when permission is granted
-                return@safeLaunch
+                return@launch
             }
 
-            // Start recording with comprehensive error handling
-            try {
+                // Start recording with comprehensive error handling
+                try {
                 recordVoiceUseCase.invoke().collect { recordingState ->
                     // Defensive check - ensure we're in a valid state for this transition
                     when (recordingState) {
@@ -165,6 +173,10 @@ class MainViewModel @Inject constructor(
                 // Catch any other unexpected errors
                 val error = AppError.RecordingFailed(e.message ?: "An unexpected error occurred. Please try again.")
                 _uiState.value = MainUiState.Error(error)
+                recordingRequested = false
+                }
+            } catch (error: Exception) {
+                _uiState.value = MainUiState.Error(AppError.SettingsNotConfigured)
                 recordingRequested = false
             }
         }

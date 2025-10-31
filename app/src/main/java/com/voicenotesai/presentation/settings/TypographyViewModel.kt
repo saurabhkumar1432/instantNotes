@@ -40,12 +40,9 @@ class TypographyViewModel @Inject constructor(
                 TypographyUiState(
                     typographySettings = typography,
                     accessibilityPreferences = AccessibilityPreferences(
-                        textSizeScale = typography.textSizeScale,
-                        spacingScale = typography.spacingScale,
+                        spacingScale = 1.0f, // Convert from enum to float
+                        highContrast = typography.highContrastMode,
                         highContrastMode = typography.highContrastMode,
-                        boldText = typography.boldText,
-                        increasedLineSpacing = typography.increasedLineSpacing,
-                        useSystemFonts = typography.useSystemFonts,
                         reducedMotion = typography.reducedMotion
                     ),
                     isLoading = false

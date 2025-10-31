@@ -1,0 +1,33 @@
+package com.voicenotesai.data.notification
+
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import com.voicenotesai.domain.notification.NotificationManager
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+
+/**
+ * Broadcast receiver for handling scheduled reminder notifications.
+ * Triggered by AlarmManager when a reminder time is reached.
+ */
+@AndroidEntryPoint
+class ReminderBroadcastReceiver : BroadcastReceiver() {
+    
+    @Inject
+    lateinit var notificationManager: NotificationManager
+    
+    override fun onReceive(context: Context, intent: Intent) {
+        val reminderId = intent.getStringExtra(NotificationManagerImpl.EXTRA_REMINDER_ID)
+        
+        if (reminderId != null) {
+            // Use a coroutine scope to handle the async operation
+            CoroutineScope(Dispatchers.IO).launch {
+                notificationManager.checkAndTriggerPendingReminders()
+            }
+        }
+    }
+}

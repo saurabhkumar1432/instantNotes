@@ -1,0 +1,26 @@
+package com.voicenotesai.di
+
+import android.content.Context
+import com.voicenotesai.presentation.accessibility.AccessibilityManager
+import dagger.Module
+import dagger.Provides
+import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
+import dagger.hilt.components.SingletonComponent
+import javax.inject.Singleton
+
+/**
+ * Dagger Hilt module for accessibility-related dependencies.
+ */
+@Module
+@InstallIn(SingletonComponent::class)
+object AccessibilityModule {
+    
+    @Provides
+    @Singleton
+    fun provideAccessibilityManager(
+        @ApplicationContext context: Context
+    ): AccessibilityManager {
+        return AccessibilityManager(context)
+    }
+}

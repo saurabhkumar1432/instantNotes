@@ -9,9 +9,11 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -21,9 +23,20 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.SmartToy
+import com.voicenotesai.presentation.sharing.SharingDialog
+import com.voicenotesai.presentation.sharing.SharingViewModel
+import com.voicenotesai.presentation.sharing.ShareableLinkDialog
+import com.voicenotesai.presentation.sharing.ShareableLinkOptions
+import com.voicenotesai.presentation.sharing.CalendarEventDialog
+import com.voicenotesai.domain.model.EnhancedNote
+import com.voicenotesai.domain.sharing.ShareFormat
+import com.voicenotesai.domain.sharing.TargetApp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -54,6 +67,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -63,12 +77,15 @@ import androidx.lifecycle.viewModelScope
 import com.voicenotesai.data.local.entity.Note
 import com.voicenotesai.data.repository.NotesRepository
 import com.voicenotesai.domain.model.AppError
+import com.voicenotesai.domain.model.Task
+import com.voicenotesai.domain.usecase.TaskManager
 import com.voicenotesai.presentation.components.toLocalizedMessage
 import com.voicenotesai.presentation.theme.Spacing
 import com.voicenotesai.presentation.theme.glassLayer
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -83,6 +100,7 @@ import javax.inject.Inject
 fun NoteDetailScreen(
     noteId: Long,
     viewModel: NoteDetailViewModel = hiltViewModel(),
+    sharingViewModel: SharingViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit
 ) {
     val context = LocalContext.current
@@ -90,13 +108,20 @@ fun NoteDetailScreen(
     val scope = rememberCoroutineScope()
 
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var showSharingDialog by remember { mutableStateOf(false) }
+    var showShareableLinkDialog by remember { mutableStateOf(false) }
+    var showCalendarEventDialog by remember { mutableStateOf(false) }
     var note by remember { mutableStateOf<Note?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<AppError?>(null) }
+    
+    val sharingUiState by sharingViewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(noteId) {
         viewModel.loadNote(noteId)
     }
+
+    var tasks by remember { mutableStateOf<List<Task>>(emptyList()) }
 
     LaunchedEffect(viewModel) {
         viewModel.uiState.collect { state ->
@@ -108,6 +133,7 @@ fun NoteDetailScreen(
                 is NoteDetailUiState.Success -> {
                     isLoading = false
                     note = state.note
+                    tasks = state.tasks
                     error = null
                 }
                 is NoteDetailUiState.Error -> {
@@ -191,6 +217,7 @@ fun NoteDetailScreen(
                 note != null -> {
                     NoteContent(
                         note = note!!,
+                        tasks = tasks,
                         onCopy = {
                             val success = copyToClipboard(context, note!!.content)
                             scope.launch {
@@ -199,8 +226,14 @@ fun NoteDetailScreen(
                                 )
                             }
                         },
-                        onShare = { shareNote(context, note!!.content) },
-                        onDelete = { showDeleteDialog = true }
+                        onShare = { showSharingDialog = true },
+                        onDelete = { showDeleteDialog = true },
+                        onToggleTaskCompletion = { taskId ->
+                            viewModel.toggleTaskCompletion(taskId)
+                        },
+                        onExtractTasks = {
+                            viewModel.extractTasksFromNote(note!!.id, note!!.content)
+                        }
                     )
                 }
                 error != null -> {
@@ -248,15 +281,111 @@ fun NoteDetailScreen(
                 onDismiss = { showDeleteDialog = false }
             )
         }
+        
+        // Sharing dialogs
+        note?.let { currentNote ->
+            val enhancedNote = EnhancedNote(
+                id = currentNote.id.toString(),
+                content = currentNote.content,
+                transcribedText = currentNote.transcribedText ?: "",
+                timestamp = currentNote.timestamp,
+                lastModified = currentNote.timestamp,
+                duration = null,
+                tags = emptyList(),
+                category = com.voicenotesai.domain.model.NoteCategory.General,
+                entities = emptyList(),
+                sentiment = null,
+                language = null,
+                isArchived = false
+            )
+            
+            SharingDialog(
+                isVisible = showSharingDialog,
+                noteTitle = currentNote.content.lines().firstOrNull()?.take(50) ?: "Untitled Note",
+                onDismiss = { showSharingDialog = false },
+                onShareAsText = {
+                    sharingViewModel.shareNoteAsText(enhancedNote)
+                    showSharingDialog = false
+                },
+                onShareAsFile = { format ->
+                    sharingViewModel.shareNoteAsFile(enhancedNote, format)
+                    showSharingDialog = false
+                },
+                onShareToApp = { targetApp, format ->
+                    sharingViewModel.shareToApp(enhancedNote, targetApp, format)
+                    showSharingDialog = false
+                },
+                onCreateShareableLink = { expirationHours ->
+                    showSharingDialog = false
+                    showShareableLinkDialog = true
+                },
+                onCreateCalendarEvent = {
+                    showSharingDialog = false
+                    showCalendarEventDialog = true
+                }
+            )
+            
+            ShareableLinkDialog(
+                isVisible = showShareableLinkDialog,
+                noteTitle = currentNote.content.lines().firstOrNull()?.take(50) ?: "Untitled Note",
+                onDismiss = { 
+                    showShareableLinkDialog = false
+                    sharingViewModel.clearGeneratedLink()
+                },
+                onCreateLink = { options ->
+                    sharingViewModel.createShareableLink(currentNote.id.toString(), options)
+                },
+                generatedLink = sharingUiState.generatedLink,
+                isLoading = sharingUiState.isLoading
+            )
+            
+            CalendarEventDialog(
+                isVisible = showCalendarEventDialog,
+                noteTitle = currentNote.content.lines().firstOrNull()?.take(50) ?: "Untitled Note",
+                noteContent = currentNote.content,
+                suggestedEvent = sharingViewModel.extractCalendarEvent(enhancedNote),
+                onDismiss = { 
+                    showCalendarEventDialog = false
+                    sharingViewModel.clearCalendarIntent()
+                },
+                onCreateEvent = { eventDetails ->
+                    sharingViewModel.createCalendarEvent(enhancedNote, eventDetails)
+                    showCalendarEventDialog = false
+                },
+                isLoading = sharingUiState.isLoading
+            )
+        }
+        
+        // Handle sharing results
+        LaunchedEffect(sharingUiState.calendarIntent) {
+            sharingUiState.calendarIntent?.let { intent ->
+                try {
+                    context.startActivity(intent)
+                    sharingViewModel.clearCalendarIntent()
+                } catch (e: Exception) {
+                    snackbarHostState.showSnackbar("Failed to open calendar app")
+                }
+            }
+        }
+        
+        LaunchedEffect(sharingUiState.error) {
+            sharingUiState.error?.let { errorMessage ->
+                snackbarHostState.showSnackbar(errorMessage)
+                sharingViewModel.clearError()
+            }
+        }
     }
 }
 
 @Composable
 private fun NoteContent(
     note: Note,
+    tasks: List<Task>,
     onCopy: () -> Unit,
     onShare: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onToggleTaskCompletion: (String) -> Unit,
+    onExtractTasks: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -322,6 +451,15 @@ private fun NoteContent(
             )
         }
 
+        // Action Items Section
+        if (tasks.isNotEmpty() || true) { // Always show section to allow task extraction
+            ActionItemsSection(
+                tasks = tasks,
+                onToggleTaskCompletion = onToggleTaskCompletion,
+                onExtractTasks = onExtractTasks
+            )
+        }
+
         Column(verticalArrangement = Arrangement.spacedBy(Spacing.medium)) {
             Button(
                 onClick = onCopy,
@@ -364,6 +502,140 @@ private fun NoteContent(
                 Text(stringResource(id = com.voicenotesai.R.string.delete_forever_label), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyLarge)
             }
         }
+    }
+}
+
+/**
+ * Action Items section showing extracted tasks with checkboxes for completion.
+ */
+@Composable
+private fun ActionItemsSection(
+    tasks: List<Task>,
+    onToggleTaskCompletion: (String) -> Unit,
+    onExtractTasks: () -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(Spacing.medium)
+    ) {
+        // Section header with extract button
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Action Items",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+            )
+            
+            if (tasks.isEmpty()) {
+                OutlinedButton(
+                    onClick = onExtractTasks,
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.SmartToy,
+                        contentDescription = null
+                    )
+                    Spacer(modifier = Modifier.width(Spacing.small))
+                    Text("Extract Tasks")
+                }
+            }
+        }
+        
+        if (tasks.isEmpty()) {
+            // Empty state
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    .background(
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    .padding(Spacing.large)
+            ) {
+                Text(
+                    text = "No action items found. Tap 'Extract Tasks' to analyze this note for tasks and todos.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+            }
+        } else {
+            // Tasks list
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    .background(
+                        color = MaterialTheme.colorScheme.surface,
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    .padding(Spacing.medium)
+            ) {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(Spacing.small)
+                ) {
+                    tasks.forEach { task ->
+                        TaskItem(
+                            task = task,
+                            onToggleCompletion = { onToggleTaskCompletion(task.id) }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Individual task item with checkbox and strikethrough for completed tasks.
+ */
+@Composable
+private fun TaskItem(
+    task: Task,
+    onToggleCompletion: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = androidx.compose.ui.Alignment.Top
+    ) {
+        Checkbox(
+            checked = task.isCompleted,
+            onCheckedChange = { onToggleCompletion() },
+            modifier = Modifier.padding(end = Spacing.small)
+        )
+        
+        Text(
+            text = task.text,
+            style = MaterialTheme.typography.bodyMedium.copy(
+                textDecoration = if (task.isCompleted) {
+                    androidx.compose.ui.text.style.TextDecoration.LineThrough
+                } else {
+                    androidx.compose.ui.text.style.TextDecoration.None
+                }
+            ),
+            color = if (task.isCompleted) {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            } else {
+                MaterialTheme.colorScheme.onSurface
+            },
+            modifier = Modifier.weight(1f)
+        )
     }
 }
 
@@ -463,7 +735,8 @@ private fun formatTimestamp(timestamp: Long): String {
  */
 @HiltViewModel
 class NoteDetailViewModel @Inject constructor(
-    private val notesRepository: NotesRepository
+    private val notesRepository: NotesRepository,
+    private val taskManager: TaskManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<NoteDetailUiState>(NoteDetailUiState.Loading)
@@ -474,10 +747,13 @@ class NoteDetailViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val note = notesRepository.getNoteById(noteId)
-                _uiState.value = if (note != null) {
-                    NoteDetailUiState.Success(note)
+                if (note != null) {
+                    // Load tasks associated with this note
+                    taskManager.getTasksForNote(noteId.toString()).collect { tasks ->
+                        _uiState.value = NoteDetailUiState.Success(note, tasks)
+                    }
                 } else {
-                    NoteDetailUiState.Error(AppError.StorageError("Note not found"))
+                    _uiState.value = NoteDetailUiState.Error(AppError.StorageError("Note not found"))
                 }
             } catch (e: Exception) {
                 val error = AppError.StorageError(e.message ?: "Failed to load note")
@@ -497,6 +773,40 @@ class NoteDetailViewModel @Inject constructor(
             }
         }
     }
+
+    fun toggleTaskCompletion(taskId: String) {
+        viewModelScope.launch {
+            try {
+                val currentState = _uiState.value
+                if (currentState is NoteDetailUiState.Success) {
+                    val task = currentState.tasks.find { it.id == taskId }
+                    if (task != null) {
+                        if (task.isCompleted) {
+                            taskManager.markTaskIncomplete(taskId)
+                        } else {
+                            taskManager.markTaskComplete(taskId)
+                        }
+                        // The UI will automatically update through the Flow in loadNote
+                    }
+                }
+            } catch (e: Exception) {
+                // Handle error silently or show a snackbar
+                val error = AppError.StorageError(e.message ?: "Failed to update task")
+                _uiState.value = NoteDetailUiState.Error(error)
+            }
+        }
+    }
+
+    fun extractTasksFromNote(noteId: Long, content: String) {
+        viewModelScope.launch {
+            try {
+                taskManager.extractAndCreateTasks(noteId.toString(), content)
+                // Tasks will be automatically updated through the Flow
+            } catch (e: Exception) {
+                // Handle error silently or show a snackbar
+            }
+        }
+    }
 }
 
 /**
@@ -504,7 +814,7 @@ class NoteDetailViewModel @Inject constructor(
  */
 sealed class NoteDetailUiState {
     object Loading : NoteDetailUiState()
-    data class Success(val note: Note) : NoteDetailUiState()
+    data class Success(val note: Note, val tasks: List<Task> = emptyList()) : NoteDetailUiState()
     data class Error(val error: AppError) : NoteDetailUiState()
     object Deleted : NoteDetailUiState()
 }

@@ -24,6 +24,7 @@ import com.voicenotesai.presentation.accessibility.AccessibleHeading
 import com.voicenotesai.presentation.layout.EnhancedLayoutConfig
 import com.voicenotesai.presentation.layout.ResponsiveContainer
 import com.voicenotesai.presentation.layout.rememberEnhancedLayoutConfig
+import com.voicenotesai.presentation.theme.SpacingScale
 import com.voicenotesai.presentation.theme.rememberAdvancedSpacing
 
 /**
@@ -40,7 +41,7 @@ fun EnhancedNoteCard(
     layoutConfig: EnhancedLayoutConfig = rememberEnhancedLayoutConfig(),
     onClick: () -> Unit = {}
 ) {
-    val spacing = rememberAdvancedSpacing(accessibilityPreferences.spacingScale)
+    val spacing = rememberAdvancedSpacing(SpacingScale.Default)
     
     Card(
         modifier = modifier
@@ -61,8 +62,8 @@ fun EnhancedNoteCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(spacing.cardPadding),
-            verticalArrangement = Arrangement.spacedBy(spacing.componentSpacing)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -73,21 +74,21 @@ fun EnhancedNoteCard(
                     text = title,
                     level = 3,
                     modifier = Modifier.weight(1f),
-                    accessibilityPreferences = accessibilityPreferences
+                    preferences = accessibilityPreferences
                 )
                 
-                Spacer(modifier = Modifier.width(spacing.small))
+                Spacer(modifier = Modifier.width(8.dp))
                 
                 AccessibleCaption(
                     text = timestamp,
-                    accessibilityPreferences = accessibilityPreferences
+                    preferences = accessibilityPreferences
                 )
             }
             
             AccessibleBodyText(
                 text = content,
                 modifier = Modifier.fillMaxWidth(),
-                accessibilityPreferences = accessibilityPreferences
+                preferences = accessibilityPreferences
             )
         }
     }
@@ -103,16 +104,16 @@ fun SettingsSection(
     accessibilityPreferences: AccessibilityPreferences = AccessibilityPreferences(),
     content: @Composable () -> Unit
 ) {
-    val spacing = rememberAdvancedSpacing(accessibilityPreferences.spacingScale)
+    val spacing = rememberAdvancedSpacing(SpacingScale.Default)
     
     Column(
         modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(spacing.medium)
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         AccessibleHeading(
             text = title,
             level = 2,
-            accessibilityPreferences = accessibilityPreferences
+            preferences = accessibilityPreferences
         )
         
         Surface(
@@ -123,8 +124,8 @@ fun SettingsSection(
             shape = MaterialTheme.shapes.medium
         ) {
             Column(
-                modifier = Modifier.padding(spacing.contentPadding),
-                verticalArrangement = Arrangement.spacedBy(spacing.componentSpacing)
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 content()
             }
@@ -161,7 +162,7 @@ fun EnhancedListItem(
     layoutConfig: EnhancedLayoutConfig = rememberEnhancedLayoutConfig(),
     onClick: () -> Unit = {}
 ) {
-    val spacing = rememberAdvancedSpacing(accessibilityPreferences.spacingScale)
+    val spacing = rememberAdvancedSpacing(SpacingScale.Default)
     
     Surface(
         modifier = modifier
@@ -177,33 +178,33 @@ fun EnhancedListItem(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(spacing.contentPadding),
+                .padding(16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(spacing.itemSpacing)
+                verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 AccessibleHeading(
                     text = title,
                     level = 4,
-                    accessibilityPreferences = accessibilityPreferences
+                    preferences = accessibilityPreferences
                 )
                 
                 subtitle?.let { sub ->
                     AccessibleCaption(
                         text = sub,
-                        accessibilityPreferences = accessibilityPreferences
+                        preferences = accessibilityPreferences
                     )
                 }
             }
             
             trailing?.let { trailingText ->
-                Spacer(modifier = Modifier.width(spacing.medium))
+                Spacer(modifier = Modifier.width(16.dp))
                 AccessibleCaption(
                     text = trailingText,
-                    accessibilityPreferences = accessibilityPreferences
+                    preferences = accessibilityPreferences
                 )
             }
         }
@@ -218,7 +219,7 @@ fun TypographyPreview(
     accessibilityPreferences: AccessibilityPreferences = AccessibilityPreferences(),
     modifier: Modifier = Modifier
 ) {
-    val spacing = rememberAdvancedSpacing(accessibilityPreferences.spacingScale)
+    val spacing = rememberAdvancedSpacing(SpacingScale.Default)
     
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -229,29 +230,29 @@ fun TypographyPreview(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(spacing.contentPadding),
-            verticalArrangement = Arrangement.spacedBy(spacing.componentSpacing)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             AccessibleHeading(
                 text = "Typography Preview",
                 level = 2,
-                accessibilityPreferences = accessibilityPreferences
+                preferences = accessibilityPreferences
             )
             
             AccessibleHeading(
                 text = "This is a heading",
                 level = 3,
-                accessibilityPreferences = accessibilityPreferences
+                preferences = accessibilityPreferences
             )
             
             AccessibleBodyText(
                 text = "This is body text that demonstrates how the typography system adapts to different accessibility settings. The line height, letter spacing, and font size all scale appropriately.",
-                accessibilityPreferences = accessibilityPreferences
+                preferences = accessibilityPreferences
             )
             
             AccessibleCaption(
                 text = "This is caption text for metadata and secondary information",
-                accessibilityPreferences = accessibilityPreferences
+                preferences = accessibilityPreferences
             )
         }
     }

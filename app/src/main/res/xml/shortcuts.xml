@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    
+    <shortcut
+        android:shortcutId="quick_record"
+        android:enabled="true"
+        android:icon="@drawable/ic_mic"
+        android:shortcutShortLabel="@string/widget_quick_record"
+        android:shortcutLongLabel="@string/shortcut_quick_record_long"
+        android:shortcutDisabledMessage="@string/shortcut_quick_record_disabled">
+        <intent
+            android:action="com.voicenotesai.ACTION_QUICK_RECORD"
+            android:targetPackage="com.voicenotesai"
+            android:targetClass="com.voicenotesai.presentation.MainActivity" />
+        <categories android:name="android.shortcut.conversation" />
+    </shortcut>
+    
+    <shortcut
+        android:shortcutId="view_tasks"
+        android:enabled="true"
+        android:icon="@drawable/ic_tasks"
+        android:shortcutShortLabel="@string/widget_view_tasks"
+        android:shortcutLongLabel="@string/shortcut_view_tasks_long"
+        android:shortcutDisabledMessage="@string/shortcut_view_tasks_disabled">
+        <intent
+            android:action="com.voicenotesai.ACTION_VIEW_TASKS"
+            android:targetPackage="com.voicenotesai"
+            android:targetClass="com.voicenotesai.presentation.MainActivity" />
+        <categories android:name="android.shortcut.conversation" />
+    </shortcut>
+    
+    <shortcut
+        android:shortcutId="recent_notes"
+        android:enabled="true"
+        android:icon="@drawable/ic_notes"
+        android:shortcutShortLabel="@string/shortcut_recent_notes_short"
+        android:shortcutLongLabel="@string/shortcut_recent_notes_long"
+        android:shortcutDisabledMessage="@string/shortcut_recent_notes_disabled">
+        <intent
+            android:action="com.voicenotesai.ACTION_VIEW_RECENT_NOTES"
+            android:targetPackage="com.voicenotesai"
+            android:targetClass="com.voicenotesai.presentation.MainActivity" />
+        <categories android:name="android.shortcut.conversation" />
+    </shortcut>
+    
+</shortcuts>

@@ -1,0 +1,53 @@
+package com.voicenotesai.di
+
+import android.content.Context
+import com.voicenotesai.presentation.performance.MemoryOptimizer
+import com.voicenotesai.presentation.performance.PerformanceOptimizer
+import com.voicenotesai.presentation.performance.SixtyFpsAnimationSystem
+import com.voicenotesai.presentation.performance.StartupOptimizer
+import dagger.Module
+import dagger.Provides
+import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
+import dagger.hilt.components.SingletonComponent
+import javax.inject.Singleton
+
+/**
+ * Dependency injection module for performance optimization components.
+ */
+@Module
+@InstallIn(SingletonComponent::class)
+object PerformanceModule {
+    
+    @Provides
+    @Singleton
+    fun providePerformanceOptimizer(
+        @ApplicationContext context: Context
+    ): PerformanceOptimizer {
+        return PerformanceOptimizer(context)
+    }
+    
+    @Provides
+    @Singleton
+    fun provideMemoryOptimizer(
+        @ApplicationContext context: Context
+    ): MemoryOptimizer {
+        return MemoryOptimizer(context)
+    }
+    
+    @Provides
+    @Singleton
+    fun provideStartupOptimizer(
+        @ApplicationContext context: Context
+    ): StartupOptimizer {
+        return StartupOptimizer(context)
+    }
+    
+    @Provides
+    @Singleton
+    fun provideSixtyFpsAnimationSystem(
+        performanceOptimizer: PerformanceOptimizer
+    ): SixtyFpsAnimationSystem {
+        return SixtyFpsAnimationSystem(performanceOptimizer)
+    }
+}

@@ -1,0 +1,45 @@
+package com.voicenotesai.data.notification
+
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import com.voicenotesai.domain.model.ReminderAction
+import com.voicenotesai.domain.notification.NotificationManager
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+
+/**
+ * Broadcast receiver for handling reminder notification actions.
+ * Handles quick actions like Mark Done, Snooze, etc.
+ */
+@AndroidEntryPoint
+class ReminderActionReceiver : BroadcastReceiver() {
+    
+    @Inject
+    lateinit var notificationManager: NotificationManager
+    
+    override fun onReceive(context: Context, intent: Intent) {
+        val reminderId = intent.getStringExtra(NotificationManagerImpl.EXTRA_REMINDER_ID)
+        val action = intent.action
+        
+        if (reminderId != null && action != null) {
+            val reminderAction = when (action) {
+                NotificationManagerImpl.ACTION_MARK_DONE -> ReminderAction.MARK_DONE
+                NotificationManagerImpl.ACTION_SNOOZE_15MIN -> ReminderAction.SNOOZE_15MIN
+                NotificationManagerImpl.ACTION_SNOOZE_1HOUR -> ReminderAction.SNOOZE_1HOUR
+                NotificationManagerImpl.ACTION_SNOOZE_TOMORROW -> ReminderAction.SNOOZE_TOMORROW
+                NotificationManagerImpl.ACTION_VIEW_NOTE -> ReminderAction.VIEW_NOTE
+                NotificationManagerImpl.ACTION_VIEW_TASK -> ReminderAction.VIEW_TASK
+                else -> return
+            }
+            
+            // Use a coroutine scope to handle the async operation
+            CoroutineScope(Dispatchers.IO).launch {
+                notificationManager.handleReminderAction(reminderId, reminderAction)
+            }
+        }
+    }
+}

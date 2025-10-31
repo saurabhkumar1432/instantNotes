@@ -1,0 +1,271 @@
+package com.voicenotesai.data.analytics
+
+import com.voicenotesai.domain.analytics.*
+import com.voicenotesai.domain.usecase.AnalyticsUseCase
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+import javax.inject.Singleton
+
+/**
+ * Example integration showing how to use the analytics system throughout the app.
+ * This demonstrates proper usage patterns and privacy-compliant tracking.
+ */
+@Singleton
+class AnalyticsIntegrationExample @Inject constructor(
+    private val analyticsUseCase: AnalyticsUseCase,
+    private val analyticsRepository: AnalyticsRepository
+) {
+    
+    /**
+     * Example: Track app launch with startup metrics
+     */
+    suspend fun trackAppLaunch(coldStart: Boolean, startupTime: Long) {
+        val sessionId = analyticsUseCase.startSession()
+        
+        analyticsUseCase.trackEvent(
+            AnalyticsEvent.AppLaunched(
+                sessionId = sessionId,
+                coldStart = coldStart,
+                startupTime = startupTime
+            )
+        )
+    }
+    
+    /**
+     * Example: Track recording workflow
+     */
+    suspend fun trackRecordingWorkflow(
+        scope: CoroutineScope,
+        recordingMode: RecordingMode = RecordingMode.Standard
+    ) {
+        val sessionId = (analyticsRepository as AnalyticsRepositoryImpl).getCurrentSessionId() 
+            ?: analyticsUseCase.startSession()
+        
+        // Track recording start
+        analyticsUseCase.trackEvent(
+            AnalyticsEvent.RecordingStarted(
+                sessionId = sessionId,
+                recordingMode = recordingMode,
+                audioQuality = AudioQuality.High
+            )
+        )
+        
+        // Simulate recording completion after some time
+        scope.launch {
+            // In real implementation, this would be called when recording actually completes
+            analyticsUseCase.trackEvent(
+                AnalyticsEvent.RecordingCompleted(
+                    sessionId = sessionId,
+                    duration = 30000L, // 30 seconds
+                    audioSize = 1024 * 1024L, // 1MB
+                    transcriptionSuccess = true,
+                    processingTime = 2000L // 2 seconds
+                )
+            )
+            
+            // Track note creation
+            analyticsUseCase.trackEvent(
+                AnalyticsEvent.NoteCreated(
+                    sessionId = sessionId,
+                    noteCategory = "Meeting",
+                    wordCount = 150,
+                    hasEntities = true,
+                    language = "en"
+                )
+            )
+        }
+    }
+    
+    /**
+     * Example: Track user journey through note creation
+     */
+    suspend fun trackNoteCreationJourney() {
+        val sessionId = (analyticsRepository as AnalyticsRepositoryImpl).getCurrentSessionId() 
+            ?: analyticsUseCase.startSession()
+        val journeyId = java.util.UUID.randomUUID().toString()
+        
+        val journey = UserJourney(
+            journeyId = journeyId,
+            sessionId = sessionId,
+            startTime = System.currentTimeMillis(),
+            steps = listOf(
+                JourneyStep(
+                    stepName = "recording_started",
+                    timestamp = System.currentTimeMillis(),
+                    metadata = mapOf("mode" to "standard")
+                ),
+                JourneyStep(
+                    stepName = "recording_completed",
+                    timestamp = System.currentTimeMillis() + 30000,
+                    duration = 30000L,
+                    metadata = mapOf("success" to "true")
+                ),
+                JourneyStep(
+                    stepName = "transcription_completed",
+                    timestamp = System.currentTimeMillis() + 32000,
+                    duration = 2000L,
+                    metadata = mapOf("accuracy" to "high")
+                ),
+                JourneyStep(
+                    stepName = "note_saved",
+                    timestamp = System.currentTimeMillis() + 33000,
+                    duration = 1000L,
+                    metadata = mapOf("category" to "meeting")
+                )
+            ),
+            completed = true
+        )
+        
+        analyticsUseCase.trackEvent(
+            AnalyticsEvent.FeatureUsed(
+                sessionId = sessionId,
+                featureName = "note_creation_journey",
+                context = journeyId
+            )
+        )
+        
+        analyticsRepository.trackUserJourney(journey)
+    }
+    
+    /**
+     * Example: Track search operations
+     */
+    suspend fun trackSearchOperation(query: String, results: List<Any>) {
+        val sessionId = (analyticsRepository as AnalyticsRepositoryImpl).getCurrentSessionId() 
+            ?: analyticsUseCase.startSession()
+        
+        val startTime = System.currentTimeMillis()
+        
+        // Simulate search processing time
+        val searchTime = 150L // 150ms
+        
+        analyticsUseCase.trackEvent(
+            AnalyticsEvent.SearchPerformed(
+                sessionId = sessionId,
+                queryLength = query.length,
+                resultsCount = results.size,
+                searchTime = searchTime
+            )
+        )
+    }
+    
+    /**
+     * Example: Track error with context
+     */
+    suspend fun trackError(error: Throwable, context: String) {
+        val sessionId = (analyticsRepository as AnalyticsRepositoryImpl).getCurrentSessionId() 
+            ?: analyticsUseCase.startSession()
+        
+        analyticsUseCase.trackEvent(
+            AnalyticsEvent.ErrorOccurred(
+                sessionId = sessionId,
+                errorType = error::class.simpleName ?: "Unknown",
+                errorMessage = error.message ?: "No message",
+                context = context
+            )
+        )
+    }
+    
+    /**
+     * Example: Get and display user insights
+     */
+    suspend fun displayUserInsights(): UserInsights {
+        val insights = analyticsUseCase.getUserInsights()
+        
+        // Log insights for demonstration
+        println("=== User Insights ===")
+        println("Recording Patterns:")
+        println("  Average duration: ${insights.recordingPatterns.averageRecordingDuration}ms")
+        println("  Most active hour: ${insights.recordingPatterns.mostActiveTimeOfDay}")
+        println("  Success rate: ${insights.recordingPatterns.successRate * 100}%")
+        
+        println("Content Analysis:")
+        println("  Average word count: ${insights.contentAnalysis.averageWordCount}")
+        println("  Top categories: ${insights.contentAnalysis.mostCommonCategories.take(3)}")
+        
+        println("Productivity Trends:")
+        println("  Current streak: ${insights.productivityTrends.streakDays} days")
+        println("  Monthly growth: ${insights.productivityTrends.monthlyGrowth * 100}%")
+        
+        println("Recommendations:")
+        insights.recommendations.forEach { recommendation ->
+            println("  ${recommendation.type}: ${recommendation.title}")
+            println("    ${recommendation.description}")
+        }
+        
+        return insights
+    }
+    
+    /**
+     * Example: Configure privacy preferences
+     */
+    suspend fun configurePrivacyPreferences() {
+        val preferences = PrivacyPreferences(
+            collectUsageData = true,
+            collectPerformanceData = true,
+            collectErrorData = true,
+            collectContentInsights = false, // More privacy-sensitive
+            dataRetentionDays = 90,
+            anonymizeData = true
+        )
+        
+        val result = analyticsUseCase.updatePrivacyPreferences(preferences)
+        
+        when (result) {
+            is ConfigResult.Success -> {
+                println("Privacy preferences updated successfully")
+            }
+            is ConfigResult.Error -> {
+                println("Failed to update privacy preferences: ${result.message}")
+            }
+        }
+    }
+    
+    /**
+     * Example: Export analytics data for user
+     */
+    suspend fun exportUserData(): AnalyticsExportData {
+        val exportData = analyticsUseCase.exportAnalyticsData()
+        
+        println("=== Analytics Export ===")
+        println("Total events: ${exportData.summary.totalEvents}")
+        println("Date range: ${exportData.summary.dateRange.start} to ${exportData.summary.dateRange.end}")
+        println("Data anonymized: ${exportData.privacyInfo.dataAnonymized}")
+        println("Retention policy: ${exportData.privacyInfo.retentionPolicy}")
+        
+        return exportData
+    }
+    
+    /**
+     * Example: Monitor analytics metrics in real-time
+     */
+    fun monitorAnalyticsMetrics(scope: CoroutineScope) {
+        scope.launch {
+            analyticsUseCase.getAnalyticsMetricsFlow().collect { metrics ->
+                println("=== Analytics Metrics ===")
+                println("Active session: ${metrics.activeSession}")
+                println("Session duration: ${metrics.sessionDuration}ms")
+                println("Events in session: ${metrics.eventsInSession}")
+                println("Memory usage: ${metrics.memoryUsage} bytes")
+                println("Storage usage: ${metrics.storageUsage} bytes")
+            }
+        }
+    }
+    
+    /**
+     * Example: Clean up analytics data
+     */
+    suspend fun cleanupAnalyticsData() {
+        val result = analyticsUseCase.clearAllAnalyticsData()
+        
+        when (result) {
+            is ClearDataResult.Success -> {
+                println("Analytics data cleared successfully")
+            }
+            is ClearDataResult.Error -> {
+                println("Failed to clear analytics data: ${result.message}")
+            }
+        }
+    }
+}

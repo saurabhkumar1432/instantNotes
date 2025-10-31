@@ -36,7 +36,7 @@ object NetworkModule {
     private const val TIMEOUT_SECONDS = 30L
     private const val OPENAI_BASE_URL = "https://api.openai.com/"
     private const val ANTHROPIC_BASE_URL = "https://api.anthropic.com/"
-    private const val GOOGLE_AI_BASE_URL = "https://generativelanguage.googleapis.com/"
+    private const val GOOGLE_AI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/"
 
     @Provides
     @Singleton
@@ -59,7 +59,7 @@ object NetworkModule {
         val loggingInterceptor = HttpLoggingInterceptor().apply {
             // Use NONE level for production, BODY for debug
             // You can control this via build variants
-            level = HttpLoggingInterceptor.Level.NONE  // Change to BODY for debugging
+            level = HttpLoggingInterceptor.Level.BODY  // Enable for debugging API issues
         }
         builder.addInterceptor(loggingInterceptor)
         

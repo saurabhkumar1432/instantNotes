@@ -2,6 +2,7 @@ package com.voicenotesai.presentation.settings
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -18,11 +19,18 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -59,11 +67,15 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.voicenotesai.data.model.AIProvider
+import com.voicenotesai.data.model.AIProviderType
+import com.voicenotesai.domain.model.toUserMessage
+import com.voicenotesai.presentation.components.GradientHeader
+import com.voicenotesai.presentation.components.SettingItem
 import com.voicenotesai.presentation.components.toLocalizedMessage
-import com.voicenotesai.presentation.theme.Spacing
+import com.voicenotesai.presentation.theme.ModernSpacing
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -73,25 +85,22 @@ fun SettingsScreen(
 ) {
 	val uiState by viewModel.uiState.collectAsState()
 	var showApiKey by remember { mutableStateOf(false) }
-	var expanded by remember { mutableStateOf(false) }
+	var showCustomHeaders by remember { mutableStateOf(false) }
 	val snackbarHostState = remember { SnackbarHostState() }
 
-	// Precompute strings used from within LaunchedEffect coroutines
-	val settingsSavedMsg = stringResource(id = com.voicenotesai.R.string.settings_saved)
+	// Handle success/error messages
 	LaunchedEffect(uiState.isSaved) {
 		if (uiState.isSaved) {
-			snackbarHostState.showSnackbar(settingsSavedMsg)
+			snackbarHostState.showSnackbar("Settings saved successfully")
 			kotlinx.coroutines.delay(2000)
 			viewModel.clearSavedState()
 		}
 	}
 
-	val localizedError = uiState.error?.toLocalizedMessage()
-	val settingsErrorMsg = localizedError?.let { stringResource(id = it.resId, *it.args) }
 	LaunchedEffect(uiState.error) {
-		uiState.error?.let {
+		uiState.error?.let { error ->
 			snackbarHostState.showSnackbar(
-				message = settingsErrorMsg ?: "",
+				message = error.toUserMessage(),
 				duration = SnackbarDuration.Long
 			)
 			viewModel.clearError()
@@ -99,32 +108,7 @@ fun SettingsScreen(
 	}
 
 	Scaffold(
-		containerColor = Color.Transparent,
-		topBar = {
-			TopAppBar(
-				title = {
-					Column(verticalArrangement = Arrangement.spacedBy(Spacing.extraSmall)) {
-						Text(
-							text = stringResource(id = com.voicenotesai.R.string.settings_ai_provider_title),
-							style = MaterialTheme.typography.titleLarge
-						)
-						Text(
-							text = stringResource(id = com.voicenotesai.R.string.settings_ai_provider_desc),
-							style = MaterialTheme.typography.bodySmall,
-							color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.65f)
-						)
-					}
-				},
-				navigationIcon = {
-					IconButton(onClick = onNavigateBack) {
-						Icon(
-							imageVector = Icons.Default.ArrowBack,
-							contentDescription = stringResource(id = com.voicenotesai.R.string.go_back_description)
-						)
-					}
-				}
-			)
-		},
+		containerColor = MaterialTheme.colorScheme.background,
 		snackbarHost = { SnackbarHost(snackbarHostState) }
 	) { paddingValues ->
 		Column(
@@ -132,290 +116,557 @@ fun SettingsScreen(
 				.fillMaxSize()
 				.padding(paddingValues)
 				.verticalScroll(rememberScrollState())
-				.padding(horizontal = Spacing.large, vertical = Spacing.extraLarge),
-			verticalArrangement = Arrangement.spacedBy(Spacing.large)
 		) {
-			SettingsSection(
-				title = stringResource(id = com.voicenotesai.R.string.settings_connection_title),
-				description = stringResource(id = com.voicenotesai.R.string.settings_connection_desc)
-			) {
-				ExposedDropdownMenuBox(
-					expanded = expanded,
-					onExpandedChange = { expanded = !expanded }
-				) {
-					OutlinedTextField(
-						value = uiState.provider.name.replace("_", " "),
-						onValueChange = {},
-						readOnly = true,
-						label = { Text(stringResource(id = com.voicenotesai.R.string.ai_provider_label)) },
-						trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-						modifier = Modifier
-							.fillMaxWidth()
-							.menuAnchor(),
-						colors = TextFieldDefaults.outlinedTextFieldColors(
-							containerColor = Color.Transparent
+			// Gradient Header
+			GradientHeader(
+				title = "Settings",
+				showUserAvatar = false,
+				actions = {
+					IconButton(onClick = onNavigateBack) {
+						Icon(
+							imageVector = Icons.Default.ArrowBack,
+							contentDescription = "Back",
+							tint = MaterialTheme.colorScheme.onPrimary
 						)
-					)
-					ExposedDropdownMenu(
-						expanded = expanded,
-						onDismissRequest = { expanded = false }
-					) {
-						AIProvider.entries.forEach { provider ->
-							DropdownMenuItem(
-								text = { Text(provider.name.replace("_", " ")) },
-								onClick = {
-									viewModel.onProviderChanged(provider)
-									expanded = false
-								}
-							)
-						}
 					}
 				}
-
-				OutlinedTextField(
-					value = uiState.apiKey,
-					onValueChange = { viewModel.onApiKeyChanged(it) },
-					label = { Text(stringResource(id = com.voicenotesai.R.string.api_key_label)) },
-					placeholder = { Text(stringResource(id = com.voicenotesai.R.string.api_key_placeholder)) },
-					visualTransformation = if (showApiKey) VisualTransformation.None else PasswordVisualTransformation(),
-					trailingIcon = {
-						TextButton(onClick = { showApiKey = !showApiKey }) {
-							Text(if (showApiKey) stringResource(id = com.voicenotesai.R.string.hide) else stringResource(id = com.voicenotesai.R.string.show))
-						}
-					},
-					keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-					modifier = Modifier.fillMaxWidth(),
-					singleLine = true,
-					colors = TextFieldDefaults.outlinedTextFieldColors(containerColor = Color.Transparent)
-				)
-
-				OutlinedTextField(
-					value = uiState.model,
-					onValueChange = { viewModel.onModelChanged(it) },
-					label = { Text(stringResource(id = com.voicenotesai.R.string.model_name_label)) },
-					placeholder = { Text(stringResource(id = com.voicenotesai.R.string.model_placeholder)) },
-					modifier = Modifier.fillMaxWidth(),
-					singleLine = true,
-					colors = TextFieldDefaults.outlinedTextFieldColors(containerColor = Color.Transparent)
+			)
+			
+			Spacer(modifier = Modifier.height(ModernSpacing.sectionSpacing))
+			
+			// AI Models Section
+			SettingsGroup(
+				title = "AI MODELS",
+				modifier = Modifier.padding(horizontal = ModernSpacing.screenPadding)
+			) {
+				AIProviderConfiguration(
+					uiState = uiState,
+					onProviderChanged = viewModel::onProviderChanged,
+					onApiKeyChanged = viewModel::onApiKeyChanged,
+					onBaseUrlChanged = viewModel::onBaseUrlChanged,
+					onModelChanged = viewModel::onModelChanged,
+					onCustomHeadersChanged = viewModel::onCustomHeadersChanged,
+					onDiscoverModels = viewModel::discoverModels,
+					onValidateConfiguration = viewModel::validateConfiguration,
+					onSaveConfiguration = viewModel::saveConfiguration,
+					showApiKey = showApiKey,
+					onToggleApiKeyVisibility = { showApiKey = !showApiKey },
+					showCustomHeaders = showCustomHeaders,
+					onToggleCustomHeaders = { showCustomHeaders = !showCustomHeaders }
 				)
 			}
-
-			SettingsSection(
-				title = stringResource(id = com.voicenotesai.R.string.why_we_validate),
-				description = stringResource(id = com.voicenotesai.R.string.api_validation_check_text)
+			
+			Spacer(modifier = Modifier.height(ModernSpacing.sectionSpacing))
+			
+			// Account Section
+			SettingsGroup(
+				title = "ACCOUNT",
+				modifier = Modifier.padding(horizontal = ModernSpacing.screenPadding)
 			) {
-				ModelRecommendations(provider = uiState.provider)
-			}
-
-			if (uiState.validationStatus != ValidationStatus.NONE) {
-				ValidationBanner(uiState)
-			}
-
-			Button(
-				onClick = { viewModel.validateApiKey() },
-				modifier = Modifier.fillMaxWidth(),
-				enabled = uiState.apiKey.isNotBlank() && uiState.model.isNotBlank() && uiState.validationStatus != ValidationStatus.VALIDATING,
-				colors = ButtonDefaults.buttonColors(
-					containerColor = MaterialTheme.colorScheme.secondaryContainer,
-					contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-				)
-			) {
-				if (uiState.validationStatus == ValidationStatus.VALIDATING) {
-					CircularProgressIndicator(
-						modifier = Modifier.size(20.dp),
-						strokeWidth = 2.dp
-					)
-					Spacer(modifier = Modifier.width(Spacing.small))
-				}
-				Text(stringResource(id = com.voicenotesai.R.string.validate_credentials), fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodyLarge)
-			}
-
-			Button(
-				onClick = { viewModel.saveSettings() },
-				modifier = Modifier.fillMaxWidth(),
-				enabled = !uiState.isLoading && uiState.validationStatus == ValidationStatus.SUCCESS,
-				colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-			) {
-				if (uiState.isLoading) {
-					CircularProgressIndicator(
-						modifier = Modifier.size(20.dp),
-						color = MaterialTheme.colorScheme.onPrimary,
-						strokeWidth = 2.dp
-					)
-					Spacer(modifier = Modifier.width(Spacing.small))
-				}
-				Text(stringResource(id = com.voicenotesai.R.string.save_configuration), fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodyLarge)
-			}
-
-			SettingsSection(
-				title = "Why we validate",
-				description = "We run a quick request before recording so you never lose a note to invalid credentials."
-			) {
-				Text(
-					text = stringResource(id = com.voicenotesai.R.string.api_validation_check_text),
-					style = MaterialTheme.typography.bodyMedium,
-					color = MaterialTheme.colorScheme.onSurfaceVariant
+				SettingItem(
+					icon = Icons.Default.CheckCircle,
+					label = "Sync Status",
+					value = "Connected",
+					onClick = { /* Handle sync settings */ }
 				)
 			}
-
-			if (uiState.isSaved) {
-				Surface(
-					modifier = Modifier.fillMaxWidth(),
-					shape = RoundedCornerShape(20.dp),
-					color = MaterialTheme.colorScheme.primaryContainer,
-					tonalElevation = 0.dp
-				) {
-					Text(
-						text = stringResource(id = com.voicenotesai.R.string.settings_saved),
-						style = MaterialTheme.typography.bodyMedium,
-						color = MaterialTheme.colorScheme.onPrimaryContainer,
-						modifier = Modifier.padding(Spacing.medium)
-					)
-				}
+			
+			Spacer(modifier = Modifier.height(ModernSpacing.sectionSpacing))
+			
+			// Security Section
+			SettingsGroup(
+				title = "SECURITY",
+				modifier = Modifier.padding(horizontal = ModernSpacing.screenPadding)
+			) {
+				SettingItem(
+					icon = Icons.Default.CheckCircle,
+					label = "Biometric Lock",
+					showToggle = true,
+					toggleValue = false,
+					onToggleChange = { /* Handle biometric toggle */ },
+					onClick = { }
+				)
 			}
+			
+			Spacer(modifier = Modifier.height(ModernSpacing.sectionSpacing))
+			
+			// Notifications Section
+			SettingsGroup(
+				title = "NOTIFICATIONS",
+				modifier = Modifier.padding(horizontal = ModernSpacing.screenPadding)
+			) {
+				SettingItem(
+					icon = Icons.Default.CheckCircle,
+					label = "Push Notifications",
+					showToggle = true,
+					toggleValue = true,
+					onToggleChange = { /* Handle notifications toggle */ },
+					onClick = { }
+				)
+			}
+			
+			Spacer(modifier = Modifier.height(ModernSpacing.sectionSpacing))
+			
+			// Appearance Section
+			SettingsGroup(
+				title = "APPEARANCE",
+				modifier = Modifier.padding(horizontal = ModernSpacing.screenPadding)
+			) {
+				SettingItem(
+					icon = Icons.Default.CheckCircle,
+					label = "Dark Mode",
+					showToggle = true,
+					toggleValue = false,
+					onToggleChange = { /* Handle dark mode toggle */ },
+					onClick = { }
+				)
+			}
+			
+			Spacer(modifier = Modifier.height(ModernSpacing.sectionSpacing))
+			
+			// Support Section
+			SettingsGroup(
+				title = "SUPPORT",
+				modifier = Modifier.padding(horizontal = ModernSpacing.screenPadding)
+			) {
+				SettingItem(
+					icon = Icons.Default.CheckCircle,
+					label = "Help & FAQ",
+					onClick = { /* Handle help */ }
+				)
+				
+				SettingItem(
+					icon = Icons.Default.CheckCircle,
+					label = "Contact Support",
+					onClick = { /* Handle contact */ }
+				)
+			}
+			
+			Spacer(modifier = Modifier.height(ModernSpacing.sectionSpacing))
+			
+			// App Version
+			Text(
+				text = "Version 1.0.0",
+				style = MaterialTheme.typography.bodySmall,
+				color = MaterialTheme.colorScheme.onSurfaceVariant,
+				modifier = Modifier
+					.fillMaxWidth()
+					.padding(ModernSpacing.screenPadding),
+				textAlign = androidx.compose.ui.text.style.TextAlign.Center
+			)
+			
+			Spacer(modifier = Modifier.height(ModernSpacing.sectionSpacing))
 		}
 	}
 }
 
 @Composable
-private fun SettingsSection(
+private fun SettingsGroup(
 	title: String,
-	description: String? = null,
+	modifier: Modifier = Modifier,
 	content: @Composable ColumnScope.() -> Unit
 ) {
-	Surface(
-		modifier = Modifier.fillMaxWidth(),
-		shape = RoundedCornerShape(24.dp),
-		tonalElevation = 4.dp
-	) {
-		Column(
-			modifier = Modifier.padding(Spacing.large),
-			verticalArrangement = Arrangement.spacedBy(Spacing.medium),
-			content = {
-				Text(
-					text = title,
-					style = MaterialTheme.typography.titleMedium,
-					fontWeight = FontWeight.SemiBold
-				)
-				description?.let {
-					Text(
-						text = it,
-						style = MaterialTheme.typography.bodyMedium,
-						color = MaterialTheme.colorScheme.onSurfaceVariant
-					)
-				}
-				content()
-			}
+	Column(modifier = modifier) {
+		Text(
+			text = title,
+			style = MaterialTheme.typography.labelSmall.copy(
+				fontWeight = FontWeight.SemiBold
+			),
+			color = MaterialTheme.colorScheme.onSurfaceVariant,
+			modifier = Modifier.padding(
+				horizontal = ModernSpacing.cardPadding,
+				vertical = ModernSpacing.componentGap
+			)
 		)
-	}
-}
-
-@Composable
-private fun ModelRecommendations(provider: AIProvider) {
-	val recommendations = when (provider) {
-		AIProvider.OPENAI -> listOf("gpt-4", "gpt-4o", "gpt-3.5-turbo")
-		AIProvider.ANTHROPIC -> listOf("claude-3-opus-20240229", "claude-3-sonnet-20240229", "claude-3-haiku-20240307")
-		AIProvider.GOOGLE_AI -> listOf("gemini-1.5-pro", "gemini-1.5-flash", "gemini-pro")
-	}
-
-	Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
-		recommendations.forEach { model ->
-			Text(
-				text = "- $model",
-				style = MaterialTheme.typography.bodyMedium,
-				color = MaterialTheme.colorScheme.onSurfaceVariant
+		
+		Card(
+			modifier = Modifier.fillMaxWidth(),
+			colors = CardDefaults.cardColors(
+				containerColor = MaterialTheme.colorScheme.surface
+			),
+			elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+			shape = RoundedCornerShape(12.dp)
+		) {
+			Column(
+				modifier = Modifier.padding(ModernSpacing.cardPadding),
+				verticalArrangement = Arrangement.spacedBy(ModernSpacing.componentGap),
+				content = content
 			)
 		}
 	}
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ValidationBanner(uiState: SettingsUiState) {
-	data class ColorSet(
-		val borderColor: Color,
-		val bgColor: Color,
-		val content: Color,
-		val iconTint: Color
-	)
+private fun AIProviderConfiguration(
+	uiState: SettingsUiState,
+	onProviderChanged: (AIProviderType) -> Unit,
+	onApiKeyChanged: (String) -> Unit,
+	onBaseUrlChanged: (String) -> Unit,
+	onModelChanged: (String) -> Unit,
+	onCustomHeadersChanged: (Map<String, String>) -> Unit,
+	onDiscoverModels: () -> Unit,
+	onValidateConfiguration: () -> Unit,
+	onSaveConfiguration: () -> Unit,
+	showApiKey: Boolean,
+	onToggleApiKeyVisibility: () -> Unit,
+	showCustomHeaders: Boolean,
+	onToggleCustomHeaders: () -> Unit
+) {
+	var providerExpanded by remember { mutableStateOf(false) }
 	
+	Column(
+		verticalArrangement = Arrangement.spacedBy(ModernSpacing.componentGap)
+	) {
+		// Provider Selection
+		ExposedDropdownMenuBox(
+			expanded = providerExpanded,
+			onExpandedChange = { providerExpanded = !providerExpanded }
+		) {
+			OutlinedTextField(
+				value = uiState.provider.getDisplayName(),
+				onValueChange = {},
+				readOnly = true,
+				label = { Text("AI Provider") },
+				trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = providerExpanded) },
+				modifier = Modifier
+					.fillMaxWidth()
+					.menuAnchor(),
+				colors = TextFieldDefaults.outlinedTextFieldColors(
+					containerColor = Color.Transparent
+				)
+			)
+			ExposedDropdownMenu(
+				expanded = providerExpanded,
+				onDismissRequest = { providerExpanded = false }
+			) {
+				AIProviderType.getAllBuiltInProviders().forEach { provider ->
+					DropdownMenuItem(
+						text = { Text(provider.getDisplayName()) },
+						onClick = {
+							onProviderChanged(provider)
+							providerExpanded = false
+						}
+					)
+				}
+				DropdownMenuItem(
+					text = { Text("Custom") },
+					onClick = {
+						onProviderChanged(AIProviderType.Custom("Custom"))
+						providerExpanded = false
+					}
+				)
+			}
+		}
+		
+		// API Key (if required)
+		if (uiState.provider.requiresApiKey()) {
+			OutlinedTextField(
+				value = uiState.apiKey,
+				onValueChange = onApiKeyChanged,
+				label = { Text("API Key") },
+				placeholder = { Text("Enter your API key") },
+				visualTransformation = if (showApiKey) VisualTransformation.None else PasswordVisualTransformation(),
+				trailingIcon = {
+					IconButton(onClick = onToggleApiKeyVisibility) {
+						Icon(
+							imageVector = if (showApiKey) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+							contentDescription = if (showApiKey) "Hide API key" else "Show API key"
+						)
+					}
+				},
+				keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+				modifier = Modifier.fillMaxWidth(),
+				singleLine = true,
+				colors = TextFieldDefaults.outlinedTextFieldColors(containerColor = Color.Transparent)
+			)
+		}
+		
+		// Base URL (for local providers and custom)
+		if (uiState.provider is AIProviderType.Ollama || 
+			uiState.provider is AIProviderType.LMStudio || 
+			uiState.provider is AIProviderType.Custom) {
+			OutlinedTextField(
+				value = uiState.baseUrl,
+				onValueChange = onBaseUrlChanged,
+				label = { Text("Base URL") },
+				placeholder = { Text(uiState.provider.getDefaultBaseUrl() ?: "Enter base URL") },
+				modifier = Modifier.fillMaxWidth(),
+				singleLine = true,
+				colors = TextFieldDefaults.outlinedTextFieldColors(containerColor = Color.Transparent)
+			)
+		}
+		
+		// Model Selection
+		Row(
+			modifier = Modifier.fillMaxWidth(),
+			horizontalArrangement = Arrangement.spacedBy(ModernSpacing.componentGap)
+		) {
+			OutlinedTextField(
+				value = uiState.modelName,
+				onValueChange = onModelChanged,
+				label = { Text("Model") },
+				placeholder = { Text("Enter model name (e.g., gpt-4, claude-3-sonnet, gemini-pro)") },
+				modifier = Modifier.weight(1f),
+				colors = TextFieldDefaults.outlinedTextFieldColors(containerColor = Color.Transparent)
+			)
+			
+			// Model Discovery Button (for local providers)
+			if (uiState.provider is AIProviderType.Ollama || uiState.provider is AIProviderType.LMStudio) {
+				IconButton(
+					onClick = onDiscoverModels,
+					enabled = uiState.baseUrl.isNotBlank() && !uiState.isDiscoveringModels
+				) {
+					if (uiState.isDiscoveringModels) {
+						CircularProgressIndicator(
+							modifier = Modifier.size(20.dp),
+							strokeWidth = 2.dp
+						)
+					} else {
+						Icon(
+							imageVector = Icons.Default.Refresh,
+							contentDescription = "Discover models"
+						)
+					}
+				}
+			}
+		}
+		
+		// Custom Headers (for Custom provider)
+		if (uiState.provider is AIProviderType.Custom) {
+			Row(
+				modifier = Modifier.fillMaxWidth(),
+				horizontalArrangement = Arrangement.SpaceBetween,
+				verticalAlignment = Alignment.CenterVertically
+			) {
+				Text(
+					text = "Custom Headers",
+					style = MaterialTheme.typography.bodyMedium
+				)
+				TextButton(onClick = onToggleCustomHeaders) {
+					Text(if (showCustomHeaders) "Hide" else "Show")
+				}
+			}
+			
+			if (showCustomHeaders) {
+				CustomHeadersEditor(
+					headers = uiState.customHeaders,
+					onHeadersChanged = onCustomHeadersChanged
+				)
+			}
+		}
+		
+		// Validation Status
+		if (uiState.validationStatus != ValidationStatus.NONE) {
+			ValidationStatusCard(uiState = uiState)
+		}
+		
+		// Validation Button
+		Button(
+			onClick = onValidateConfiguration,
+			modifier = Modifier.fillMaxWidth(),
+			enabled = uiState.isConfigurationComplete() && uiState.validationStatus != ValidationStatus.VALIDATING,
+			colors = ButtonDefaults.buttonColors(
+				containerColor = MaterialTheme.colorScheme.secondaryContainer,
+				contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+			)
+		) {
+			if (uiState.validationStatus == ValidationStatus.VALIDATING) {
+				CircularProgressIndicator(
+					modifier = Modifier.size(20.dp),
+					strokeWidth = 2.dp
+				)
+				Spacer(modifier = Modifier.width(8.dp))
+			}
+			Text(
+				text = when (uiState.validationStatus) {
+					ValidationStatus.VALIDATING -> "Validating..."
+					ValidationStatus.SUCCESS -> "Validated ✓"
+					ValidationStatus.FAILED -> "Retry Validation"
+					else -> "Validate Configuration"
+				},
+				fontWeight = FontWeight.SemiBold
+			)
+		}
+		
+		// Save Button
+		Button(
+			onClick = onSaveConfiguration,
+			modifier = Modifier.fillMaxWidth(),
+			enabled = !uiState.isLoading && uiState.validationStatus == ValidationStatus.SUCCESS,
+			colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+		) {
+			if (uiState.isLoading) {
+				CircularProgressIndicator(
+					modifier = Modifier.size(20.dp),
+					color = MaterialTheme.colorScheme.onPrimary,
+					strokeWidth = 2.dp
+				)
+				Spacer(modifier = Modifier.width(8.dp))
+			}
+			Text(
+				text = "Save Configuration",
+				fontWeight = FontWeight.SemiBold
+			)
+		}
+	}
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CustomHeadersEditor(
+	headers: Map<String, String>,
+	onHeadersChanged: (Map<String, String>) -> Unit
+) {
+	var newHeaderKey by remember { mutableStateOf("") }
+	var newHeaderValue by remember { mutableStateOf("") }
+	
+	Column(
+		verticalArrangement = Arrangement.spacedBy(ModernSpacing.componentGap)
+	) {
+		// Existing headers
+		headers.forEach { (key, value) ->
+			Row(
+				modifier = Modifier.fillMaxWidth(),
+				horizontalArrangement = Arrangement.spacedBy(8.dp),
+				verticalAlignment = Alignment.CenterVertically
+			) {
+				Text(
+					text = "$key: $value",
+					modifier = Modifier.weight(1f),
+					style = MaterialTheme.typography.bodySmall
+				)
+				IconButton(
+					onClick = {
+						val newHeaders = headers.toMutableMap()
+						newHeaders.remove(key)
+						onHeadersChanged(newHeaders)
+					}
+				) {
+					Icon(
+						imageVector = Icons.Default.Delete,
+						contentDescription = "Remove header",
+						tint = MaterialTheme.colorScheme.error
+					)
+				}
+			}
+		}
+		
+		// Add new header
+		Row(
+			modifier = Modifier.fillMaxWidth(),
+			horizontalArrangement = Arrangement.spacedBy(8.dp),
+			verticalAlignment = Alignment.CenterVertically
+		) {
+			OutlinedTextField(
+				value = newHeaderKey,
+				onValueChange = { newHeaderKey = it },
+				label = { Text("Header Name") },
+				modifier = Modifier.weight(1f),
+				singleLine = true,
+				colors = TextFieldDefaults.outlinedTextFieldColors(containerColor = Color.Transparent)
+			)
+			OutlinedTextField(
+				value = newHeaderValue,
+				onValueChange = { newHeaderValue = it },
+				label = { Text("Header Value") },
+				modifier = Modifier.weight(1f),
+				singleLine = true,
+				colors = TextFieldDefaults.outlinedTextFieldColors(containerColor = Color.Transparent)
+			)
+			IconButton(
+				onClick = {
+					if (newHeaderKey.isNotBlank() && newHeaderValue.isNotBlank()) {
+						val newHeaders = headers.toMutableMap()
+						newHeaders[newHeaderKey] = newHeaderValue
+						onHeadersChanged(newHeaders)
+						newHeaderKey = ""
+						newHeaderValue = ""
+					}
+				},
+				enabled = newHeaderKey.isNotBlank() && newHeaderValue.isNotBlank()
+			) {
+				Icon(
+					imageVector = Icons.Default.Add,
+					contentDescription = "Add header"
+				)
+			}
+		}
+	}
+}
+
+@Composable
+private fun ValidationStatusCard(uiState: SettingsUiState) {
 	val colors = when (uiState.validationStatus) {
-		ValidationStatus.SUCCESS -> ColorSet(
+		ValidationStatus.SUCCESS -> Triple(
 			MaterialTheme.colorScheme.primary,
-			MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
-			MaterialTheme.colorScheme.onPrimaryContainer,
-			MaterialTheme.colorScheme.primary
+			MaterialTheme.colorScheme.primaryContainer,
+			MaterialTheme.colorScheme.onPrimaryContainer
 		)
-		ValidationStatus.FAILED -> ColorSet(
+		ValidationStatus.FAILED -> Triple(
 			MaterialTheme.colorScheme.error,
-			MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f),
-			MaterialTheme.colorScheme.onErrorContainer,
-			MaterialTheme.colorScheme.error
+			MaterialTheme.colorScheme.errorContainer,
+			MaterialTheme.colorScheme.onErrorContainer
 		)
-		ValidationStatus.VALIDATING -> ColorSet(
+		ValidationStatus.VALIDATING -> Triple(
 			MaterialTheme.colorScheme.secondary,
-			MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-			MaterialTheme.colorScheme.onSurfaceVariant,
-			MaterialTheme.colorScheme.secondary
+			MaterialTheme.colorScheme.secondaryContainer,
+			MaterialTheme.colorScheme.onSecondaryContainer
 		)
-		else -> ColorSet(
+		else -> Triple(
 			MaterialTheme.colorScheme.outline,
 			MaterialTheme.colorScheme.surface,
-			MaterialTheme.colorScheme.onSurface,
 			MaterialTheme.colorScheme.onSurface
 		)
 	}
-
-	Column(
-		modifier = Modifier
-			.fillMaxWidth()
-			.border(
-				width = 3.dp,
-				color = colors.borderColor,
-				shape = RoundedCornerShape(20.dp)
-			)
-			.background(
-				color = colors.bgColor,
-				shape = RoundedCornerShape(20.dp)
-			)
-			.padding(Spacing.large),
-		verticalArrangement = Arrangement.spacedBy(Spacing.medium)
+	
+	Card(
+		modifier = Modifier.fillMaxWidth(),
+		colors = CardDefaults.cardColors(containerColor = colors.second),
+		border = BorderStroke(1.dp, colors.first)
 	) {
 		Row(
-			verticalAlignment = Alignment.CenterVertically,
-			horizontalArrangement = Arrangement.spacedBy(Spacing.medium)
+			modifier = Modifier
+				.fillMaxWidth()
+				.padding(ModernSpacing.cardPadding),
+			horizontalArrangement = Arrangement.spacedBy(ModernSpacing.componentGap),
+			verticalAlignment = Alignment.CenterVertically
 		) {
 			when (uiState.validationStatus) {
 				ValidationStatus.VALIDATING -> {
 					CircularProgressIndicator(
-						modifier = Modifier.size(28.dp),
-						strokeWidth = 3.dp,
-						color = colors.iconTint
+						modifier = Modifier.size(24.dp),
+						strokeWidth = 2.dp,
+						color = colors.first
 					)
 				}
 				ValidationStatus.SUCCESS -> {
 					Icon(
 						imageVector = Icons.Default.CheckCircle,
 						contentDescription = null,
-						tint = colors.iconTint,
-						modifier = Modifier.size(28.dp)
+						tint = colors.first,
+						modifier = Modifier.size(24.dp)
 					)
 				}
 				ValidationStatus.FAILED -> {
 					Icon(
 						imageVector = Icons.Default.Close,
 						contentDescription = null,
-						tint = colors.iconTint,
-						modifier = Modifier.size(28.dp)
+						tint = colors.first,
+						modifier = Modifier.size(24.dp)
 					)
 				}
 				else -> {}
 			}
+			
 			Text(
 				text = uiState.validationMessage,
-				style = MaterialTheme.typography.bodyLarge,
-				color = colors.content,
-				fontWeight = FontWeight.Bold
+				style = MaterialTheme.typography.bodyMedium,
+				color = colors.third,
+				fontWeight = FontWeight.Medium
 			)
 		}
 	}
 }
+
+

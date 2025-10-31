@@ -469,6 +469,7 @@ private fun ExportFormatOption(
         ExportFormat.TEXT -> stringResource(id = com.voicenotesai.R.string.export_desc_text)
         ExportFormat.MARKDOWN -> stringResource(id = com.voicenotesai.R.string.export_desc_markdown)
         ExportFormat.JSON -> stringResource(id = com.voicenotesai.R.string.export_desc_json)
+        ExportFormat.PDF -> stringResource(id = com.voicenotesai.R.string.export_desc_pdf)
     }
     
     Card(

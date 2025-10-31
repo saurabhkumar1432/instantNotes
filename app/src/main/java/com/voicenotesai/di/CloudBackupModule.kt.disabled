@@ -1,0 +1,46 @@
+package com.voicenotesai.di
+
+import com.voicenotesai.data.sync.DropboxBackupProvider
+// import com.voicenotesai.data.sync.GoogleDriveBackupProvider // Temporarily disabled
+import com.voicenotesai.domain.sync.CloudBackupProvider
+import com.voicenotesai.domain.sync.CloudProviderType
+import dagger.Module
+import dagger.Provides
+import dagger.hilt.InstallIn
+import dagger.hilt.components.SingletonComponent
+import javax.inject.Named
+import javax.inject.Singleton
+
+/**
+ * Dependency injection module for cloud backup providers.
+ */
+@Module
+@InstallIn(SingletonComponent::class)
+object CloudBackupModule {
+
+    // Temporarily disabled - missing Google Play Services dependencies
+    // @Provides
+    // @Singleton
+    // @Named("GoogleDrive")
+    // fun provideGoogleDriveBackupProvider(
+    //     googleDriveProvider: GoogleDriveBackupProvider
+    // ): CloudBackupProvider = googleDriveProvider
+
+    @Provides
+    @Singleton
+    @Named("Dropbox")
+    fun provideDropboxBackupProvider(
+        dropboxProvider: DropboxBackupProvider
+    ): CloudBackupProvider = dropboxProvider
+
+    @Provides
+    @Singleton
+    fun provideCloudBackupProviders(
+        @Named("Dropbox") dropboxProvider: CloudBackupProvider
+    ): Map<CloudProviderType, CloudBackupProvider> {
+        return mapOf(
+            // CloudProviderType.GOOGLE_DRIVE to googleDriveProvider, // Temporarily disabled
+            CloudProviderType.DROPBOX to dropboxProvider
+        )
+    }
+}

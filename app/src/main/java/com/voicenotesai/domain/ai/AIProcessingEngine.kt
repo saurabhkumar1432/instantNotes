@@ -178,22 +178,7 @@ data class Theme(
     val keywords: List<String>
 )
 
-/**
- * Content category classification.
- */
-enum class ContentCategory {
-    MEETING,
-    BRAINSTORMING,
-    TASK_PLANNING,
-    RESEARCH_NOTES,
-    PERSONAL_REFLECTION,
-    INTERVIEW,
-    LECTURE,
-    PHONE_CALL,
-    REMINDER,
-    IDEA_CAPTURE,
-    OTHER
-}
+
 
 /**
  * Content complexity assessment.
