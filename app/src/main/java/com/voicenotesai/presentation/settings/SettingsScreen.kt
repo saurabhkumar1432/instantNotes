@@ -398,35 +398,86 @@ private fun AIProviderConfiguration(
 		}
 		
 		// Model Selection
-		Row(
-			modifier = Modifier.fillMaxWidth(),
-			horizontalArrangement = Arrangement.spacedBy(ModernSpacing.componentGap)
-		) {
-			OutlinedTextField(
-				value = uiState.modelName,
-				onValueChange = onModelChanged,
-				label = { Text("Model") },
-				placeholder = { Text("Enter model name (e.g., gpt-4, claude-3-sonnet, gemini-pro)") },
-				modifier = Modifier.weight(1f),
-				colors = TextFieldDefaults.outlinedTextFieldColors(containerColor = Color.Transparent)
-			)
+		if (uiState.availableModels.isNotEmpty()) {
+			// Show dropdown selector when models are available
+			var modelExpanded by remember { mutableStateOf(false) }
 			
-			// Model Discovery Button (for local providers)
-			if (uiState.provider is AIProviderType.Ollama || uiState.provider is AIProviderType.LMStudio) {
-				IconButton(
-					onClick = onDiscoverModels,
-					enabled = uiState.baseUrl.isNotBlank() && !uiState.isDiscoveringModels
+			ExposedDropdownMenuBox(
+				expanded = modelExpanded,
+				onExpandedChange = { modelExpanded = !modelExpanded }
+			) {
+				OutlinedTextField(
+					value = uiState.modelName,
+					onValueChange = onModelChanged,
+					readOnly = false,
+					label = { Text("Model") },
+					placeholder = { Text("Select or enter model name") },
+					trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = modelExpanded) },
+					modifier = Modifier
+						.fillMaxWidth()
+						.menuAnchor(),
+					colors = TextFieldDefaults.outlinedTextFieldColors(
+						containerColor = Color.Transparent
+					)
+				)
+				ExposedDropdownMenu(
+					expanded = modelExpanded,
+					onDismissRequest = { modelExpanded = false }
 				) {
-					if (uiState.isDiscoveringModels) {
-						CircularProgressIndicator(
-							modifier = Modifier.size(20.dp),
-							strokeWidth = 2.dp
+					uiState.availableModels.forEach { model ->
+						DropdownMenuItem(
+							text = { 
+								Column {
+									Text(model.name)
+									model.description?.let { desc ->
+										Text(
+											text = desc,
+											style = MaterialTheme.typography.bodySmall,
+											color = MaterialTheme.colorScheme.onSurfaceVariant
+										)
+									}
+								}
+							},
+							onClick = {
+								onModelChanged(model.id)
+								modelExpanded = false
+							}
 						)
-					} else {
-						Icon(
-							imageVector = Icons.Default.Refresh,
-							contentDescription = "Discover models"
-						)
+					}
+				}
+			}
+		} else {
+			// Show text field when no models available
+			Row(
+				modifier = Modifier.fillMaxWidth(),
+				horizontalArrangement = Arrangement.spacedBy(ModernSpacing.componentGap)
+			) {
+				OutlinedTextField(
+					value = uiState.modelName,
+					onValueChange = onModelChanged,
+					label = { Text("Model") },
+					placeholder = { Text("Enter model name (e.g., gpt-4, claude-3-sonnet, gemini-pro)") },
+					modifier = Modifier.weight(1f),
+					colors = TextFieldDefaults.outlinedTextFieldColors(containerColor = Color.Transparent)
+				)
+				
+				// Model Discovery Button (for local providers)
+				if (uiState.provider is AIProviderType.Ollama || uiState.provider is AIProviderType.LMStudio) {
+					IconButton(
+						onClick = onDiscoverModels,
+						enabled = uiState.baseUrl.isNotBlank() && !uiState.isDiscoveringModels
+					) {
+						if (uiState.isDiscoveringModels) {
+							CircularProgressIndicator(
+								modifier = Modifier.size(20.dp),
+								strokeWidth = 2.dp
+							)
+						} else {
+							Icon(
+								imageVector = Icons.Default.Refresh,
+								contentDescription = "Discover models"
+							)
+						}
 					}
 				}
 			}
