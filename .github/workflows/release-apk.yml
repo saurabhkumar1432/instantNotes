@@ -8,6 +8,9 @@ on:
       - '.github/**'
       - '!.github/workflows/release-apk.yml'
 
+permissions:
+  contents: write
+
 jobs:
   build-release:
     runs-on: ubuntu-latest
