@@ -95,6 +95,17 @@ tasks.named("check") {
     dependsOn("detectStringResourceInNonComposable")
 }
 
+// Handle dependency conflicts
+configurations.all {
+    resolutionStrategy {
+        force("com.fasterxml.jackson.core:jackson-core:2.13.5")
+        force("com.fasterxml.jackson.core:jackson-databind:2.13.5")
+        force("com.fasterxml.jackson.core:jackson-annotations:2.13.5")
+    }
+    
+    exclude(group = "org.jetbrains", module = "annotations-java5")
+}
+
 // Performance testing tasks
 tasks.register<Test>("performanceTest") {
     group = "verification"
@@ -268,6 +279,10 @@ android {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
             excludes += "/META-INF/DEPENDENCIES"
+            excludes += "/META-INF/LICENSE"
+            excludes += "/META-INF/LICENSE.txt"
+            excludes += "/META-INF/NOTICE"
+            excludes += "/META-INF/NOTICE.txt"
         }
     }
 }
@@ -332,14 +347,16 @@ dependencies {
     // Kotlinx Serialization
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
     
-    // PDF generation
-    implementation("com.itextpdf:itext7-core:7.2.5")
+    // PDF generation - using Android-compatible version
+    implementation("com.itextpdf:itext7-core:7.1.18")
     
-    // Cloud Storage
+    // Cloud Storage - using Android-compatible versions
     implementation("com.google.android.gms:play-services-drive:17.0.0")
-    implementation("com.google.api-client:google-api-client-android:2.2.0")
-    implementation("com.google.apis:google-api-services-drive:v3-rev20220815-2.0.0")
-    implementation("com.dropbox.core:dropbox-core-sdk:5.4.5")
+    implementation("com.google.api-client:google-api-client-android:1.32.1")
+    implementation("com.google.apis:google-api-services-drive:v3-rev20220815-2.0.0") {
+        exclude(group = "com.google.guava", module = "guava-jdk5")
+    }
+    implementation("com.dropbox.core:dropbox-core-sdk:5.4.4")
     
     // Work Manager for background sync
     implementation("androidx.work:work-runtime-ktx:2.9.0")
